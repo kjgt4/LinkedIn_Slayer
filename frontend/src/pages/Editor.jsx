@@ -73,6 +73,19 @@ export default function Editor() {
     scheduled_slot: searchParams.get('slot') ? parseInt(searchParams.get('slot')) : null,
   });
 
+  // Check LinkedIn connection status
+  useEffect(() => {
+    const checkLinkedIn = async () => {
+      try {
+        const response = await getSettings();
+        setLinkedInConnected(response.data.linkedin_connected || false);
+      } catch (error) {
+        console.error('Failed to check LinkedIn status');
+      }
+    };
+    checkLinkedIn();
+  }, []);
+
   // Load existing post
   useEffect(() => {
     if (postId) {
@@ -118,6 +131,29 @@ export default function Editor() {
       toast.error('Failed to save post');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePublishToLinkedIn = async () => {
+    if (!postId) {
+      toast.error('Please save the post first');
+      return;
+    }
+    
+    setPublishingToLinkedIn(true);
+    try {
+      const response = await publishToLinkedIn(postId);
+      setPost(prev => ({ 
+        ...prev, 
+        status: 'published',
+        linkedin_post_id: response.data.linkedin_post_id 
+      }));
+      toast.success('Published to LinkedIn! 30-minute engagement timer started.');
+    } catch (error) {
+      const message = error.response?.data?.detail || 'Failed to publish to LinkedIn';
+      toast.error(message);
+    } finally {
+      setPublishingToLinkedIn(false);
     }
   };
 
