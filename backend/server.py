@@ -55,6 +55,10 @@ class UserSettings(BaseModel):
     linkedin_user_id: Optional[str] = None
     linkedin_name: Optional[str] = None
     linkedin_token_expires: Optional[str] = None
+    # LinkedIn API Credentials (user-provided)
+    linkedin_client_id: Optional[str] = None
+    linkedin_client_secret: Optional[str] = None
+    linkedin_redirect_uri: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -68,6 +72,20 @@ class UserSettingsUpdate(BaseModel):
     linkedin_user_id: Optional[str] = None
     linkedin_name: Optional[str] = None
     linkedin_token_expires: Optional[str] = None
+    linkedin_client_id: Optional[str] = None
+    linkedin_client_secret: Optional[str] = None
+    linkedin_redirect_uri: Optional[str] = None
+
+# Inspiration URL Model
+class InspirationUrl(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    url: str
+    title: Optional[str] = None
+    is_favorite: bool = False
+    use_count: int = 1
+    last_used: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 # Voice Profile Model
 class VoiceProfile(BaseModel):
