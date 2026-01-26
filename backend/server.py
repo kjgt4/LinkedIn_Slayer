@@ -1115,17 +1115,32 @@ async def validate_hook(request: HookValidationRequest):
 
 # ============== LinkedIn Integration Routes ==============
 
-# LinkedIn OAuth Configuration
-LINKEDIN_CLIENT_ID = os.environ.get('LINKEDIN_CLIENT_ID', '')
-LINKEDIN_CLIENT_SECRET = os.environ.get('LINKEDIN_CLIENT_SECRET', '')
-LINKEDIN_REDIRECT_URI = os.environ.get('LINKEDIN_REDIRECT_URI', '')
+# LinkedIn OAuth Configuration (fallback to env vars, but prefer user settings)
+LINKEDIN_CLIENT_ID_ENV = os.environ.get('LINKEDIN_CLIENT_ID', '')
+LINKEDIN_CLIENT_SECRET_ENV = os.environ.get('LINKEDIN_CLIENT_SECRET', '')
+LINKEDIN_REDIRECT_URI_ENV = os.environ.get('LINKEDIN_REDIRECT_URI', '')
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+
+async def get_linkedin_credentials():
+    """Get LinkedIn credentials from user settings or environment"""
+    settings = await get_user_settings()
+    
+    client_id = settings.linkedin_client_id or LINKEDIN_CLIENT_ID_ENV
+    client_secret = settings.linkedin_client_secret or LINKEDIN_CLIENT_SECRET_ENV
+    redirect_uri = settings.linkedin_redirect_uri or LINKEDIN_REDIRECT_URI_ENV
+    
+    return client_id, client_secret, redirect_uri
 
 @api_router.get("/linkedin/auth")
 async def get_linkedin_auth_url():
     """Generate LinkedIn OAuth authorization URL"""
-    if not LINKEDIN_CLIENT_ID:
-        raise HTTPException(status_code=400, detail="LinkedIn Client ID not configured. Please add your LinkedIn API credentials in settings.")
+    client_id, client_secret, redirect_uri = await get_linkedin_credentials()
+    
+    if not client_id:
+        raise HTTPException(status_code=400, detail="LinkedIn Client ID not configured. Please add your LinkedIn API credentials in Settings.")
+    
+    if not redirect_uri:
+        raise HTTPException(status_code=400, detail="LinkedIn Redirect URI not configured. Please add it in Settings.")
     
     scopes = "r_emailaddress profile w_member_social openid"
     state = str(uuid.uuid4())
@@ -1133,8 +1148,8 @@ async def get_linkedin_auth_url():
     auth_url = (
         f"https://www.linkedin.com/oauth/v2/authorization?"
         f"response_type=code&"
-        f"client_id={LINKEDIN_CLIENT_ID}&"
-        f"redirect_uri={LINKEDIN_REDIRECT_URI}&"
+        f"client_id={client_id}&"
+        f"redirect_uri={redirect_uri}&"
         f"scope={scopes}&"
         f"state={state}"
     )
@@ -1144,7 +1159,9 @@ async def get_linkedin_auth_url():
 @api_router.get("/linkedin/callback")
 async def linkedin_callback(code: str, state: Optional[str] = None):
     """Handle LinkedIn OAuth callback and exchange code for access token"""
-    if not LINKEDIN_CLIENT_ID or not LINKEDIN_CLIENT_SECRET:
+    client_id, client_secret, redirect_uri = await get_linkedin_credentials()
+    
+    if not client_id or not client_secret:
         raise HTTPException(status_code=400, detail="LinkedIn API credentials not configured")
     
     # Exchange code for access token
@@ -1154,9 +1171,9 @@ async def linkedin_callback(code: str, state: Optional[str] = None):
             data={
                 "grant_type": "authorization_code",
                 "code": code,
-                "client_id": LINKEDIN_CLIENT_ID,
-                "client_secret": LINKEDIN_CLIENT_SECRET,
-                "redirect_uri": LINKEDIN_REDIRECT_URI
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "redirect_uri": redirect_uri
             },
             headers={"Content-Type": "application/x-www-form-urlencoded"}
         )
