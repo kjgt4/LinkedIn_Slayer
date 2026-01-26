@@ -1,11 +1,13 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, PenSquare, FolderOpen, Settings, Zap } from 'lucide-react';
+import { LayoutDashboard, PenSquare, FolderOpen, Settings, Zap, Database, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/editor', icon: PenSquare, label: 'Create' },
   { path: '/library', icon: FolderOpen, label: 'Library' },
+  { path: '/vault', icon: Database, label: 'Vault' },
+  { path: '/analytics', icon: BarChart3, label: 'Analytics' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
 
