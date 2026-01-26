@@ -22,6 +22,17 @@ export const createPost = (data) => api.post('/posts', data);
 export const updatePost = (id, data) => api.put(`/posts/${id}`, data);
 export const deletePost = (id) => api.delete(`/posts/${id}`);
 
+// Post Scheduling
+export const schedulePost = (id, date, slot, time) => 
+  api.post(`/posts/${id}/schedule`, null, { params: { scheduled_date: date, scheduled_slot: slot, scheduled_time: time } });
+export const unschedulePost = (id) => api.post(`/posts/${id}/unschedule`);
+export const publishPost = (id) => api.post(`/posts/${id}/publish`);
+export const updateEngagementMetrics = (id, metrics) => 
+  api.post(`/posts/${id}/engagement-metrics`, null, { params: metrics });
+
+// Engagement Timer
+export const getActiveEngagement = () => api.get('/engagement/active');
+
 // Calendar
 export const getWeekCalendar = (weekOffset = 0) => api.get('/calendar/week', { params: { week_offset: weekOffset } });
 
@@ -32,5 +43,22 @@ export const improveHook = (hook) => api.post('/ai/improve-hook', { hook });
 
 // Hook Validation
 export const validateHook = (hook) => api.post('/validate-hook', { hook });
+
+// Knowledge Vault
+export const getKnowledgeItems = (sourceType) => api.get('/knowledge', { params: { source_type: sourceType } });
+export const getKnowledgeItem = (id) => api.get(`/knowledge/${id}`);
+export const createKnowledgeItem = (data) => api.post('/knowledge', data);
+export const updateKnowledgeItem = (id, data) => api.put(`/knowledge/${id}`, data);
+export const deleteKnowledgeItem = (id) => api.delete(`/knowledge/${id}`);
+export const uploadKnowledgeFile = (formData) => api.post('/knowledge/upload', formData, {
+  headers: { 'Content-Type': 'multipart/form-data' }
+});
+export const addKnowledgeFromUrl = (url, title, tags) => 
+  api.post('/knowledge/url', null, { params: { url, title, tags: tags.join(',') } });
+export const extractGems = (id) => api.post(`/knowledge/${id}/extract-gems`);
+
+// Analytics
+export const getPerformanceMetrics = () => api.get('/analytics/performance');
+export const getPillarRecommendation = () => api.get('/analytics/pillar-recommendation');
 
 export default api;
