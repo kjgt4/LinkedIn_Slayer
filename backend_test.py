@@ -211,6 +211,176 @@ class LinkedInAuthorityEngineAPITester:
         except Exception as e:
             return self.log_test("AI Improve Hook", False, str(e))
 
+    # ============== Phase 2 Features Tests ==============
+    
+    def test_schedule_post(self):
+        """Test scheduling a post"""
+        if not self.test_post_id:
+            return self.log_test("Schedule Post", False, "No test post ID available")
+        
+        try:
+            schedule_data = {
+                "scheduled_date": "2025-01-15",
+                "scheduled_slot": 1,
+                "scheduled_time": "10:00"
+            }
+            response = self.session.post(f"{self.base_url}/api/posts/{self.test_post_id}/schedule", 
+                                       params=schedule_data)
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = data.get("status") == "scheduled"
+            return self.log_test("Schedule Post", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Schedule Post", False, str(e))
+
+    def test_publish_post(self):
+        """Test publishing a post"""
+        if not self.test_post_id:
+            return self.log_test("Publish Post", False, "No test post ID available")
+        
+        try:
+            response = self.session.post(f"{self.base_url}/api/posts/{self.test_post_id}/publish")
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = data.get("status") == "published"
+            return self.log_test("Publish Post", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Publish Post", False, str(e))
+
+    def test_engagement_active(self):
+        """Test getting active engagement posts"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/engagement/active")
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = isinstance(data, list)
+            return self.log_test("Active Engagement", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Active Engagement", False, str(e))
+
+    def test_create_knowledge_item(self):
+        """Test creating a knowledge vault item"""
+        try:
+            knowledge_data = {
+                "title": "Test Knowledge Item",
+                "content": "This is test content for knowledge vault",
+                "source_type": "text",
+                "tags": ["test", "knowledge"]
+            }
+            response = self.session.post(f"{self.base_url}/api/knowledge", json=knowledge_data)
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                self.test_knowledge_id = data.get("id")
+                success = self.test_knowledge_id is not None
+            return self.log_test("Create Knowledge Item", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Create Knowledge Item", False, str(e))
+
+    def test_get_knowledge_items(self):
+        """Test getting all knowledge items"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/knowledge")
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = isinstance(data, list)
+            return self.log_test("Get Knowledge Items", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Get Knowledge Items", False, str(e))
+
+    def test_get_knowledge_item_by_id(self):
+        """Test getting a specific knowledge item by ID"""
+        if not hasattr(self, 'test_knowledge_id') or not self.test_knowledge_id:
+            return self.log_test("Get Knowledge Item by ID", False, "No test knowledge ID available")
+        
+        try:
+            response = self.session.get(f"{self.base_url}/api/knowledge/{self.test_knowledge_id}")
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = data.get("id") == self.test_knowledge_id
+            return self.log_test("Get Knowledge Item by ID", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Get Knowledge Item by ID", False, str(e))
+
+    def test_add_knowledge_from_url(self):
+        """Test adding knowledge from URL"""
+        try:
+            url_data = {
+                "url": "https://example.com",
+                "title": "Test URL Knowledge",
+                "tags": ["url", "test"]
+            }
+            response = self.session.post(f"{self.base_url}/api/knowledge/url", params=url_data)
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = data.get("source_type") == "url"
+            return self.log_test("Add Knowledge from URL", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Add Knowledge from URL", False, str(e))
+
+    def test_extract_gems(self):
+        """Test extracting gems from knowledge item"""
+        if not hasattr(self, 'test_knowledge_id') or not self.test_knowledge_id:
+            return self.log_test("Extract Gems", False, "No test knowledge ID available")
+        
+        try:
+            response = self.session.post(f"{self.base_url}/api/knowledge/{self.test_knowledge_id}/extract-gems")
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = 'gems' in data
+            return self.log_test("Extract Gems", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Extract Gems", False, str(e))
+
+    def test_performance_metrics(self):
+        """Test getting performance analytics"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/analytics/performance")
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                required_fields = ['total_posts', 'published_posts', 'avg_engagement', 
+                                 'pillar_performance', 'framework_performance']
+                success = all(field in data for field in required_fields)
+            return self.log_test("Performance Metrics", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Performance Metrics", False, str(e))
+
+    def test_pillar_recommendation(self):
+        """Test getting AI pillar recommendation"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/analytics/pillar-recommendation")
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                required_fields = ['recommendation', 'suggested_distribution', 'insight']
+                success = all(field in data for field in required_fields)
+            return self.log_test("Pillar Recommendation", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Pillar Recommendation", False, str(e))
+
+    def test_delete_knowledge_item(self):
+        """Test deleting a knowledge item"""
+        if not hasattr(self, 'test_knowledge_id') or not self.test_knowledge_id:
+            return self.log_test("Delete Knowledge Item", False, "No test knowledge ID available")
+        
+        try:
+            response = self.session.delete(f"{self.base_url}/api/knowledge/{self.test_knowledge_id}")
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = "deleted successfully" in data.get("message", "")
+            return self.log_test("Delete Knowledge Item", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Delete Knowledge Item", False, str(e))
+
     def test_delete_post(self):
         """Test deleting a post (run last)"""
         if not self.test_post_id:
