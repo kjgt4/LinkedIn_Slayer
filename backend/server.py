@@ -49,6 +49,12 @@ class UserSettings(BaseModel):
     ai_model: str = "claude-sonnet-4-5-20250929"
     api_key: Optional[str] = None
     use_emergent_key: bool = True
+    # LinkedIn Integration
+    linkedin_connected: bool = False
+    linkedin_access_token: Optional[str] = None
+    linkedin_user_id: Optional[str] = None
+    linkedin_name: Optional[str] = None
+    linkedin_token_expires: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -57,6 +63,57 @@ class UserSettingsUpdate(BaseModel):
     ai_model: Optional[str] = None
     api_key: Optional[str] = None
     use_emergent_key: Optional[bool] = None
+    linkedin_connected: Optional[bool] = None
+    linkedin_access_token: Optional[str] = None
+    linkedin_user_id: Optional[str] = None
+    linkedin_name: Optional[str] = None
+    linkedin_token_expires: Optional[str] = None
+
+# Voice Profile Model
+class VoiceProfile(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str = "Default Voice"
+    tone: str = "professional"  # professional, casual, authoritative, friendly
+    vocabulary_style: str = "business"  # business, technical, conversational, academic
+    sentence_structure: str = "varied"  # short, varied, complex
+    personality_traits: List[str] = Field(default_factory=lambda: ["confident", "helpful"])
+    avoid_phrases: List[str] = Field(default_factory=list)
+    preferred_phrases: List[str] = Field(default_factory=list)
+    signature_expressions: List[str] = Field(default_factory=list)
+    example_posts: List[str] = Field(default_factory=list)
+    industry_context: str = ""
+    target_audience: str = ""
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class VoiceProfileCreate(BaseModel):
+    name: str
+    tone: str = "professional"
+    vocabulary_style: str = "business"
+    sentence_structure: str = "varied"
+    personality_traits: List[str] = Field(default_factory=list)
+    avoid_phrases: List[str] = Field(default_factory=list)
+    preferred_phrases: List[str] = Field(default_factory=list)
+    signature_expressions: List[str] = Field(default_factory=list)
+    example_posts: List[str] = Field(default_factory=list)
+    industry_context: str = ""
+    target_audience: str = ""
+
+class VoiceProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    tone: Optional[str] = None
+    vocabulary_style: Optional[str] = None
+    sentence_structure: Optional[str] = None
+    personality_traits: Optional[List[str]] = None
+    avoid_phrases: Optional[List[str]] = None
+    preferred_phrases: Optional[List[str]] = None
+    signature_expressions: Optional[List[str]] = None
+    example_posts: Optional[List[str]] = None
+    industry_context: Optional[str] = None
+    target_audience: Optional[str] = None
+    is_active: Optional[bool] = None
 
 class Post(BaseModel):
     model_config = ConfigDict(extra="ignore")
