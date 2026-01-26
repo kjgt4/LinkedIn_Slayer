@@ -38,7 +38,9 @@ export const getWeekCalendar = (weekOffset = 0) => api.get('/calendar/week', { p
 
 // AI
 export const generateContent = (data) => api.post('/ai/generate-content', data);
-export const suggestTopics = (context) => api.post('/ai/suggest-topics', null, { params: { context } });
+export const suggestTopics = (context, inspirationUrl) => api.post('/ai/suggest-topics', null, { 
+  params: { context, inspiration_url: inspirationUrl } 
+});
 export const improveHook = (hook) => api.post('/ai/improve-hook', { hook });
 
 // Hook Validation
