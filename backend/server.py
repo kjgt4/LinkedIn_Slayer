@@ -927,8 +927,30 @@ CTA: [Your call to action]
         raise HTTPException(status_code=500, detail=f"AI generation failed: {str(e)}")
 
 @api_router.post("/ai/suggest-topics", response_model=List[TopicSuggestion])
-async def suggest_topics(context: Optional[str] = None):
+async def suggest_topics(context: Optional[str] = None, inspiration_url: Optional[str] = None):
     """Generate topic suggestions for LinkedIn posts"""
+    
+    # Fetch inspiration content from URL if provided
+    inspiration_content = ""
+    if inspiration_url:
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(inspiration_url, timeout=15.0, follow_redirects=True)
+                response.raise_for_status()
+                # Get text content and limit size
+                raw_content = response.text[:15000]
+                # Clean up HTML if present
+                import re as regex
+                # Remove script and style tags
+                raw_content = regex.sub(r'<script[^>]*>.*?</script>', '', raw_content, flags=regex.DOTALL)
+                raw_content = regex.sub(r'<style[^>]*>.*?</style>', '', raw_content, flags=regex.DOTALL)
+                # Remove HTML tags
+                raw_content = regex.sub(r'<[^>]+>', ' ', raw_content)
+                # Clean up whitespace
+                raw_content = regex.sub(r'\s+', ' ', raw_content).strip()
+                inspiration_content = f"\n\nINSPIRATION CONTENT from {inspiration_url}:\n{raw_content[:8000]}\n\nUse this content as inspiration to generate topic ideas that align with and relate to this material."
+        except Exception as e:
+            logger.warning(f"Failed to fetch inspiration URL: {str(e)}")
     
     # Get knowledge vault gems for personalized suggestions
     knowledge_items = await db.knowledge_vault.find({}, {"_id": 0, "extracted_gems": 1, "tags": 1}).to_list(20)
@@ -944,6 +966,7 @@ async def suggest_topics(context: Optional[str] = None):
     
     system_message = f"""You are an expert LinkedIn content strategist. Generate 5 diverse topic suggestions for LinkedIn posts.
 {expertise_context}
+{inspiration_content}
 
 For each topic, specify:
 1. The topic/angle
@@ -967,6 +990,8 @@ Output as JSON array with format:
         prompt = "Generate 5 LinkedIn post topic suggestions"
         if context:
             prompt += f" based on this context: {context}"
+        if inspiration_url:
+            prompt += f". Topics should be inspired by and relevant to the content from the provided URL."
         
         response = await chat.send_message(UserMessage(text=prompt))
         
