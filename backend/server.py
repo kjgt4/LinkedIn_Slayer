@@ -1051,11 +1051,330 @@ async def validate_hook(request: HookValidationRequest):
         score=score
     )
 
+# ============== LinkedIn Integration Routes ==============
+
+# LinkedIn OAuth Configuration
+LINKEDIN_CLIENT_ID = os.environ.get('LINKEDIN_CLIENT_ID', '')
+LINKEDIN_CLIENT_SECRET = os.environ.get('LINKEDIN_CLIENT_SECRET', '')
+LINKEDIN_REDIRECT_URI = os.environ.get('LINKEDIN_REDIRECT_URI', '')
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+
+@api_router.get("/linkedin/auth")
+async def get_linkedin_auth_url():
+    """Generate LinkedIn OAuth authorization URL"""
+    if not LINKEDIN_CLIENT_ID:
+        raise HTTPException(status_code=400, detail="LinkedIn Client ID not configured. Please add your LinkedIn API credentials in settings.")
+    
+    scopes = "r_emailaddress profile w_member_social openid"
+    state = str(uuid.uuid4())
+    
+    auth_url = (
+        f"https://www.linkedin.com/oauth/v2/authorization?"
+        f"response_type=code&"
+        f"client_id={LINKEDIN_CLIENT_ID}&"
+        f"redirect_uri={LINKEDIN_REDIRECT_URI}&"
+        f"scope={scopes}&"
+        f"state={state}"
+    )
+    
+    return {"auth_url": auth_url, "state": state}
+
+@api_router.get("/linkedin/callback")
+async def linkedin_callback(code: str, state: Optional[str] = None):
+    """Handle LinkedIn OAuth callback and exchange code for access token"""
+    if not LINKEDIN_CLIENT_ID or not LINKEDIN_CLIENT_SECRET:
+        raise HTTPException(status_code=400, detail="LinkedIn API credentials not configured")
+    
+    # Exchange code for access token
+    async with httpx.AsyncClient() as client:
+        token_response = await client.post(
+            "https://www.linkedin.com/oauth/v2/accessToken",
+            data={
+                "grant_type": "authorization_code",
+                "code": code,
+                "client_id": LINKEDIN_CLIENT_ID,
+                "client_secret": LINKEDIN_CLIENT_SECRET,
+                "redirect_uri": LINKEDIN_REDIRECT_URI
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        
+        if token_response.status_code != 200:
+            logger.error(f"LinkedIn token exchange failed: {token_response.text}")
+            raise HTTPException(status_code=400, detail="Failed to exchange code for token")
+        
+        token_data = token_response.json()
+        access_token = token_data.get("access_token")
+        expires_in = token_data.get("expires_in", 5184000)  # Default 60 days
+        
+        # Get user profile
+        profile_response = await client.get(
+            "https://api.linkedin.com/v2/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        
+        if profile_response.status_code != 200:
+            logger.error(f"LinkedIn profile fetch failed: {profile_response.text}")
+            raise HTTPException(status_code=400, detail="Failed to get LinkedIn profile")
+        
+        profile_data = profile_response.json()
+        linkedin_user_id = profile_data.get("sub")
+        linkedin_name = profile_data.get("name", "")
+    
+    # Update user settings with LinkedIn connection
+    settings = await get_user_settings()
+    expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
+    
+    await db.user_settings.update_one(
+        {"id": settings.id},
+        {"$set": {
+            "linkedin_connected": True,
+            "linkedin_access_token": access_token,
+            "linkedin_user_id": linkedin_user_id,
+            "linkedin_name": linkedin_name,
+            "linkedin_token_expires": serialize_datetime(expires_at),
+            "updated_at": serialize_datetime(datetime.now(timezone.utc))
+        }}
+    )
+    
+    # Redirect to frontend with success
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url=f"{FRONTEND_URL}/settings?linkedin=connected")
+
+@api_router.post("/linkedin/disconnect")
+async def disconnect_linkedin():
+    """Disconnect LinkedIn account"""
+    settings = await get_user_settings()
+    
+    await db.user_settings.update_one(
+        {"id": settings.id},
+        {"$set": {
+            "linkedin_connected": False,
+            "linkedin_access_token": None,
+            "linkedin_user_id": None,
+            "linkedin_name": None,
+            "linkedin_token_expires": None,
+            "updated_at": serialize_datetime(datetime.now(timezone.utc))
+        }}
+    )
+    
+    return {"message": "LinkedIn disconnected successfully"}
+
+@api_router.post("/linkedin/publish/{post_id}")
+async def publish_to_linkedin(post_id: str):
+    """Publish a post directly to LinkedIn"""
+    settings = await get_user_settings()
+    
+    if not settings.linkedin_connected or not settings.linkedin_access_token:
+        raise HTTPException(status_code=400, detail="LinkedIn account not connected")
+    
+    # Check if token is expired
+    if settings.linkedin_token_expires:
+        expires_at = datetime.fromisoformat(settings.linkedin_token_expires.replace('Z', '+00:00'))
+        if expires_at < datetime.now(timezone.utc):
+            raise HTTPException(status_code=401, detail="LinkedIn token expired. Please reconnect your account.")
+    
+    # Get the post
+    post = await db.posts.find_one({"id": post_id}, {"_id": 0})
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    # Format post content for LinkedIn
+    full_content = f"{post.get('hook', '')}\n\n{post.get('rehook', '')}\n\n{post.get('content', '')}"
+    full_content = full_content.strip()
+    
+    # Prepare LinkedIn post payload
+    user_urn = f"urn:li:person:{settings.linkedin_user_id}"
+    
+    post_data = {
+        "author": user_urn,
+        "lifecycleState": "PUBLISHED",
+        "specificContent": {
+            "com.linkedin.ugc.ShareContent": {
+                "shareCommentary": {"text": full_content},
+                "shareMediaCategory": "NONE"
+            }
+        },
+        "visibility": {
+            "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
+        }
+    }
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            "https://api.linkedin.com/v2/ugcPosts",
+            json=post_data,
+            headers={
+                "Authorization": f"Bearer {settings.linkedin_access_token}",
+                "X-Restli-Protocol-Version": "2.0.0",
+                "Content-Type": "application/json",
+                "LinkedIn-Version": "202401"
+            }
+        )
+        
+        if response.status_code not in [200, 201]:
+            logger.error(f"LinkedIn publish failed: {response.text}")
+            raise HTTPException(status_code=response.status_code, detail=f"Failed to publish to LinkedIn: {response.text}")
+        
+        linkedin_response = response.json()
+        linkedin_post_id = linkedin_response.get("id", "")
+    
+    # Update post with LinkedIn details
+    now = datetime.now(timezone.utc)
+    await db.posts.update_one(
+        {"id": post_id},
+        {"$set": {
+            "status": "published",
+            "published_at": serialize_datetime(now),
+            "engagement_timer_start": serialize_datetime(now),
+            "linkedin_post_id": linkedin_post_id,
+            "linkedin_post_url": f"https://www.linkedin.com/feed/update/{linkedin_post_id}",
+            "updated_at": serialize_datetime(now)
+        }}
+    )
+    
+    updated_post = await db.posts.find_one({"id": post_id}, {"_id": 0})
+    return {
+        "success": True,
+        "linkedin_post_id": linkedin_post_id,
+        "post": Post(**deserialize_datetime(updated_post))
+    }
+
+# ============== Voice Profile Routes ==============
+
+@api_router.get("/voice-profiles", response_model=List[VoiceProfile])
+async def get_voice_profiles():
+    """Get all voice profiles"""
+    profiles = await db.voice_profiles.find({}, {"_id": 0}).to_list(100)
+    return [VoiceProfile(**deserialize_datetime(p)) for p in profiles]
+
+@api_router.get("/voice-profiles/active", response_model=Optional[VoiceProfile])
+async def get_active_voice_profile():
+    """Get the currently active voice profile"""
+    profile = await db.voice_profiles.find_one({"is_active": True}, {"_id": 0})
+    if profile:
+        return VoiceProfile(**deserialize_datetime(profile))
+    return None
+
+@api_router.get("/voice-profiles/{profile_id}", response_model=VoiceProfile)
+async def get_voice_profile(profile_id: str):
+    """Get a specific voice profile"""
+    profile = await db.voice_profiles.find_one({"id": profile_id}, {"_id": 0})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Voice profile not found")
+    return VoiceProfile(**deserialize_datetime(profile))
+
+@api_router.post("/voice-profiles", response_model=VoiceProfile)
+async def create_voice_profile(profile_create: VoiceProfileCreate):
+    """Create a new voice profile"""
+    profile = VoiceProfile(**profile_create.model_dump())
+    
+    doc = profile.model_dump()
+    doc['created_at'] = serialize_datetime(doc['created_at'])
+    doc['updated_at'] = serialize_datetime(doc['updated_at'])
+    
+    await db.voice_profiles.insert_one(doc)
+    return profile
+
+@api_router.put("/voice-profiles/{profile_id}", response_model=VoiceProfile)
+async def update_voice_profile(profile_id: str, update: VoiceProfileUpdate):
+    """Update a voice profile"""
+    profile = await db.voice_profiles.find_one({"id": profile_id}, {"_id": 0})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Voice profile not found")
+    
+    update_data = update.model_dump(exclude_unset=True)
+    if update_data:
+        update_data['updated_at'] = serialize_datetime(datetime.now(timezone.utc))
+        
+        # If setting this profile as active, deactivate others
+        if update_data.get('is_active'):
+            await db.voice_profiles.update_many(
+                {"id": {"$ne": profile_id}},
+                {"$set": {"is_active": False}}
+            )
+        
+        await db.voice_profiles.update_one({"id": profile_id}, {"$set": update_data})
+    
+    updated_profile = await db.voice_profiles.find_one({"id": profile_id}, {"_id": 0})
+    return VoiceProfile(**deserialize_datetime(updated_profile))
+
+@api_router.delete("/voice-profiles/{profile_id}")
+async def delete_voice_profile(profile_id: str):
+    """Delete a voice profile"""
+    result = await db.voice_profiles.delete_one({"id": profile_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Voice profile not found")
+    return {"message": "Voice profile deleted successfully"}
+
+@api_router.post("/voice-profiles/{profile_id}/activate")
+async def activate_voice_profile(profile_id: str):
+    """Set a voice profile as the active one"""
+    profile = await db.voice_profiles.find_one({"id": profile_id}, {"_id": 0})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Voice profile not found")
+    
+    # Deactivate all profiles
+    await db.voice_profiles.update_many({}, {"$set": {"is_active": False}})
+    
+    # Activate selected profile
+    await db.voice_profiles.update_one(
+        {"id": profile_id},
+        {"$set": {"is_active": True, "updated_at": serialize_datetime(datetime.now(timezone.utc))}}
+    )
+    
+    updated_profile = await db.voice_profiles.find_one({"id": profile_id}, {"_id": 0})
+    return VoiceProfile(**deserialize_datetime(updated_profile))
+
+@api_router.post("/voice-profiles/analyze-samples")
+async def analyze_writing_samples(samples: List[str]):
+    """Analyze writing samples to generate a voice profile"""
+    if not samples or len(samples) < 2:
+        raise HTTPException(status_code=400, detail="Please provide at least 2 writing samples")
+    
+    system_message = """You are an expert at analyzing writing style and voice. 
+    
+Analyze the provided writing samples and extract the author's unique voice characteristics.
+
+Provide a JSON response with:
+{
+    "tone": "professional|casual|authoritative|friendly|inspirational",
+    "vocabulary_style": "business|technical|conversational|academic|creative",
+    "sentence_structure": "short|varied|complex",
+    "personality_traits": ["trait1", "trait2", ...],
+    "signature_expressions": ["phrase1", "phrase2", ...],
+    "preferred_phrases": ["phrase1", "phrase2", ...],
+    "avoid_phrases": ["phrase1", "phrase2", ...],
+    "writing_patterns": "summary of unique patterns",
+    "recommended_profile_name": "name suggestion"
+}
+"""
+
+    try:
+        chat = await get_llm_chat(
+            session_id=f"voice-analyze-{uuid.uuid4()}",
+            system_message=system_message
+        )
+        
+        samples_text = "\n\n---SAMPLE---\n\n".join(samples)
+        response = await chat.send_message(UserMessage(text=f"Analyze these writing samples:\n\n{samples_text}"))
+        
+        # Parse JSON from response
+        json_match = re.search(r'\{[\s\S]*\}', response)
+        if json_match:
+            analysis = json.loads(json_match.group())
+            return analysis
+        
+        return {"error": "Could not parse analysis"}
+    except Exception as e:
+        logger.error(f"Voice analysis error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Voice analysis failed: {str(e)}")
+
 # ============== Root Route ==============
 
 @api_router.get("/")
 async def root():
-    return {"message": "LinkedIn Authority Engine API", "version": "2.0.0"}
+    return {"message": "LinkedIn Authority Engine API", "version": "3.0.0"}
 
 # Include the router in the main app
 app.include_router(api_router)
