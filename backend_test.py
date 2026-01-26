@@ -212,6 +212,150 @@ class LinkedInAuthorityEngineAPITester:
         except Exception as e:
             return self.log_test("AI Improve Hook", False, str(e))
 
+    # ============== Phase 3 Features Tests ==============
+    
+    def test_get_voice_profiles(self):
+        """Test getting all voice profiles"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/voice-profiles")
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = isinstance(data, list)
+            return self.log_test("Get Voice Profiles", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Get Voice Profiles", False, str(e))
+
+    def test_create_voice_profile(self):
+        """Test creating a voice profile"""
+        try:
+            profile_data = {
+                "name": "Test Voice Profile",
+                "tone": "professional",
+                "vocabulary_style": "business",
+                "sentence_structure": "varied",
+                "personality_traits": ["confident", "helpful"],
+                "preferred_phrases": ["Here's the thing", "Let me share"],
+                "signature_expressions": ["In my experience"],
+                "industry_context": "B2B SaaS",
+                "target_audience": "CTOs and Tech Leaders"
+            }
+            response = self.session.post(f"{self.base_url}/api/voice-profiles", json=profile_data)
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                self.test_voice_profile_id = data.get("id")
+                success = self.test_voice_profile_id is not None
+            return self.log_test("Create Voice Profile", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Create Voice Profile", False, str(e))
+
+    def test_get_voice_profile_by_id(self):
+        """Test getting a specific voice profile by ID"""
+        if not hasattr(self, 'test_voice_profile_id') or not self.test_voice_profile_id:
+            return self.log_test("Get Voice Profile by ID", False, "No test voice profile ID available")
+        
+        try:
+            response = self.session.get(f"{self.base_url}/api/voice-profiles/{self.test_voice_profile_id}")
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = data.get("id") == self.test_voice_profile_id
+            return self.log_test("Get Voice Profile by ID", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Get Voice Profile by ID", False, str(e))
+
+    def test_activate_voice_profile(self):
+        """Test activating a voice profile"""
+        if not hasattr(self, 'test_voice_profile_id') or not self.test_voice_profile_id:
+            return self.log_test("Activate Voice Profile", False, "No test voice profile ID available")
+        
+        try:
+            response = self.session.post(f"{self.base_url}/api/voice-profiles/{self.test_voice_profile_id}/activate")
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = data.get("is_active") == True
+            return self.log_test("Activate Voice Profile", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Activate Voice Profile", False, str(e))
+
+    def test_get_active_voice_profile(self):
+        """Test getting the active voice profile"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/voice-profiles/active")
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                # Can be null if no active profile, so just check it's a valid response
+                success = data is None or isinstance(data, dict)
+            return self.log_test("Get Active Voice Profile", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Get Active Voice Profile", False, str(e))
+
+    def test_analyze_writing_samples(self):
+        """Test analyzing writing samples to create voice profile"""
+        try:
+            samples = [
+                "Here's the thing about LinkedIn growth - it's not about posting more, it's about posting better. I learned this the hard way after 6 months of daily posts with zero engagement.",
+                "Let me share something that changed my perspective on content creation. The best posts aren't the ones with perfect grammar or fancy words. They're the ones that solve real problems for real people.",
+                "In my experience working with 100+ B2B companies, the biggest mistake I see is focusing on features instead of outcomes. Your audience doesn't care about your product specs - they care about results."
+            ]
+            response = self.session.post(f"{self.base_url}/api/voice-profiles/analyze-samples", json=samples)
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                # Should return analysis with tone, style, etc.
+                success = 'tone' in data or 'recommended_profile_name' in data
+            return self.log_test("Analyze Writing Samples", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Analyze Writing Samples", False, str(e))
+
+    def test_linkedin_auth_url(self):
+        """Test getting LinkedIn OAuth URL"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/linkedin/auth")
+            # This should return 400 if LinkedIn credentials not configured (expected)
+            # or 200 if configured
+            success = response.status_code in [200, 400]
+            if response.status_code == 400:
+                # Check if it's the expected "not configured" error
+                data = response.json()
+                success = "not configured" in data.get("detail", "").lower()
+            elif response.status_code == 200:
+                data = response.json()
+                success = "auth_url" in data
+            return self.log_test("LinkedIn Auth URL", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("LinkedIn Auth URL", False, str(e))
+
+    def test_linkedin_disconnect(self):
+        """Test LinkedIn disconnect endpoint"""
+        try:
+            response = self.session.post(f"{self.base_url}/api/linkedin/disconnect")
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = "disconnected successfully" in data.get("message", "").lower()
+            return self.log_test("LinkedIn Disconnect", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("LinkedIn Disconnect", False, str(e))
+
+    def test_delete_voice_profile(self):
+        """Test deleting a voice profile"""
+        if not hasattr(self, 'test_voice_profile_id') or not self.test_voice_profile_id:
+            return self.log_test("Delete Voice Profile", False, "No test voice profile ID available")
+        
+        try:
+            response = self.session.delete(f"{self.base_url}/api/voice-profiles/{self.test_voice_profile_id}")
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = "deleted successfully" in data.get("message", "")
+            return self.log_test("Delete Voice Profile", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Delete Voice Profile", False, str(e))
+
     # ============== Phase 2 Features Tests ==============
     
     def test_schedule_post(self):
