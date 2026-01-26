@@ -709,6 +709,103 @@ Output as JSON array:
         logger.error(f"Gem extraction error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Gem extraction failed: {str(e)}")
 
+# ============== Inspiration URL Routes ==============
+
+@api_router.get("/inspiration-urls", response_model=List[InspirationUrl])
+async def get_inspiration_urls(favorites_only: bool = False):
+    """Get inspiration URL history, sorted by last used"""
+    query = {"is_favorite": True} if favorites_only else {}
+    urls = await db.inspiration_urls.find(query, {"_id": 0}).sort("last_used", -1).to_list(50)
+    return [InspirationUrl(**u) for u in urls]
+
+@api_router.post("/inspiration-urls")
+async def save_inspiration_url(url: str, title: Optional[str] = None):
+    """Save or update an inspiration URL"""
+    # Check if URL already exists
+    existing = await db.inspiration_urls.find_one({"url": url}, {"_id": 0})
+    
+    if existing:
+        # Update use count and last_used
+        await db.inspiration_urls.update_one(
+            {"url": url},
+            {"$set": {"last_used": serialize_datetime(datetime.now(timezone.utc))}, "$inc": {"use_count": 1}}
+        )
+        updated = await db.inspiration_urls.find_one({"url": url}, {"_id": 0})
+        return InspirationUrl(**updated)
+    
+    # Create new
+    inspiration = InspirationUrl(url=url, title=title)
+    doc = inspiration.model_dump()
+    doc['last_used'] = serialize_datetime(doc['last_used'])
+    doc['created_at'] = serialize_datetime(doc['created_at'])
+    
+    await db.inspiration_urls.insert_one(doc)
+    return inspiration
+
+@api_router.put("/inspiration-urls/{url_id}/favorite")
+async def toggle_favorite_url(url_id: str):
+    """Toggle favorite status for an inspiration URL"""
+    url_doc = await db.inspiration_urls.find_one({"id": url_id}, {"_id": 0})
+    if not url_doc:
+        raise HTTPException(status_code=404, detail="URL not found")
+    
+    new_status = not url_doc.get("is_favorite", False)
+    await db.inspiration_urls.update_one(
+        {"id": url_id},
+        {"$set": {"is_favorite": new_status}}
+    )
+    
+    updated = await db.inspiration_urls.find_one({"id": url_id}, {"_id": 0})
+    return InspirationUrl(**updated)
+
+@api_router.delete("/inspiration-urls/{url_id}")
+async def delete_inspiration_url(url_id: str):
+    """Delete an inspiration URL from history"""
+    result = await db.inspiration_urls.delete_one({"id": url_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="URL not found")
+    return {"message": "URL deleted"}
+
+@api_router.post("/inspiration-urls/{url_id}/to-vault")
+async def save_inspiration_to_vault(url_id: str):
+    """Save an inspiration URL to the Knowledge Vault"""
+    url_doc = await db.inspiration_urls.find_one({"id": url_id}, {"_id": 0})
+    if not url_doc:
+        raise HTTPException(status_code=404, detail="URL not found")
+    
+    url = url_doc.get("url")
+    title = url_doc.get("title") or f"Inspiration: {url[:50]}..."
+    
+    # Check if already in vault
+    existing = await db.knowledge_vault.find_one({"source_url": url}, {"_id": 0})
+    if existing:
+        return {"message": "URL already in Knowledge Vault", "item": KnowledgeItem(**deserialize_datetime(existing))}
+    
+    # Fetch content
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=30.0, follow_redirects=True)
+            response.raise_for_status()
+            content = response.text[:50000]
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to fetch URL: {str(e)}")
+    
+    # Create knowledge item
+    item = KnowledgeItem(
+        title=title,
+        content=content,
+        source_type="url",
+        source_url=url,
+        tags=["inspiration"]
+    )
+    
+    doc = item.model_dump()
+    doc['created_at'] = serialize_datetime(doc['created_at'])
+    doc['updated_at'] = serialize_datetime(doc['updated_at'])
+    
+    await db.knowledge_vault.insert_one(doc)
+    return {"message": "Saved to Knowledge Vault", "item": item}
+
 # ============== Performance Analytics Routes ==============
 
 @api_router.get("/analytics/performance", response_model=PerformanceMetrics)
