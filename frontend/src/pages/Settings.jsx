@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Loader2, Save, Key, Cpu, Check, Linkedin, Link2, Unlink } from 'lucide-react';
+import { Loader2, Save, Key, Cpu, Check, Linkedin, Link2, Unlink, Settings2, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { getSettings, updateSettings, getLinkedInAuthUrl, disconnectLinkedIn } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -59,6 +64,7 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [connectingLinkedIn, setConnectingLinkedIn] = useState(false);
+  const [linkedInConfigOpen, setLinkedInConfigOpen] = useState(false);
   const [settings, setSettings] = useState({
     ai_provider: 'anthropic',
     ai_model: 'claude-sonnet-4-5-20250929',
@@ -66,6 +72,9 @@ export default function Settings() {
     use_emergent_key: true,
     linkedin_connected: false,
     linkedin_name: '',
+    linkedin_client_id: '',
+    linkedin_client_secret: '',
+    linkedin_redirect_uri: '',
   });
 
   useEffect(() => {
@@ -88,7 +97,14 @@ export default function Settings() {
         use_emergent_key: response.data.use_emergent_key ?? true,
         linkedin_connected: response.data.linkedin_connected || false,
         linkedin_name: response.data.linkedin_name || '',
+        linkedin_client_id: response.data.linkedin_client_id || '',
+        linkedin_client_secret: response.data.linkedin_client_secret || '',
+        linkedin_redirect_uri: response.data.linkedin_redirect_uri || '',
       });
+      // Auto-open config if credentials not set
+      if (!response.data.linkedin_client_id && !response.data.linkedin_connected) {
+        setLinkedInConfigOpen(true);
+      }
     } catch (error) {
       console.error('Failed to load settings:', error);
     } finally {
@@ -104,6 +120,9 @@ export default function Settings() {
         ai_model: settings.ai_model,
         api_key: settings.api_key,
         use_emergent_key: settings.use_emergent_key,
+        linkedin_client_id: settings.linkedin_client_id,
+        linkedin_client_secret: settings.linkedin_client_secret,
+        linkedin_redirect_uri: settings.linkedin_redirect_uri,
       });
       toast.success('Settings saved');
     } catch (error) {
@@ -123,13 +142,24 @@ export default function Settings() {
   };
 
   const handleConnectLinkedIn = async () => {
+    // Check if credentials are configured
+    if (!settings.linkedin_client_id || !settings.linkedin_redirect_uri) {
+      toast.error('Please configure LinkedIn API credentials first');
+      setLinkedInConfigOpen(true);
+      return;
+    }
+
+    // Save credentials first
+    await handleSave();
+
     setConnectingLinkedIn(true);
     try {
       const response = await getLinkedInAuthUrl();
       window.location.href = response.data.auth_url;
     } catch (error) {
       if (error.response?.data?.detail?.includes('not configured')) {
-        toast.error('LinkedIn API not configured. Please add your LinkedIn API credentials to the backend .env file.');
+        toast.error('Please configure LinkedIn API credentials first');
+        setLinkedInConfigOpen(true);
       } else {
         toast.error('Failed to connect LinkedIn');
       }
@@ -158,6 +188,8 @@ export default function Settings() {
       </div>
     );
   }
+
+  const hasLinkedInCredentials = settings.linkedin_client_id && settings.linkedin_client_secret && settings.linkedin_redirect_uri;
 
   return (
     <div className="p-8 max-w-2xl mx-auto space-y-8">
@@ -220,25 +252,102 @@ export default function Settings() {
           </div>
         ) : (
           <div className="space-y-4">
-            <p className="text-sm text-neutral-400">
-              Connect your LinkedIn account to publish posts directly from the editor with one click.
-            </p>
+            {/* API Credentials Configuration */}
+            <Collapsible open={linkedInConfigOpen} onOpenChange={setLinkedInConfigOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between text-neutral-400 hover:text-white hover:bg-white/5 p-3 h-auto">
+                  <div className="flex items-center gap-2">
+                    <Settings2 className="w-4 h-4" />
+                    <span>Configure API Credentials</span>
+                  </div>
+                  <span className={cn(
+                    "text-xs px-2 py-0.5 rounded",
+                    hasLinkedInCredentials ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
+                  )}>
+                    {hasLinkedInCredentials ? 'Configured' : 'Required'}
+                  </span>
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-4 pt-4">
+                <div className="p-4 rounded-lg bg-neutral-900/50 border border-white/5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-neutral-400">
+                      Get your LinkedIn API credentials from the Developer Portal
+                    </p>
+                    <a 
+                      href="https://www.linkedin.com/developers/apps" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-electric-blue hover:underline text-sm flex items-center gap-1"
+                    >
+                      Open Portal <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-neutral-400 text-xs uppercase tracking-wider">Client ID</Label>
+                    <Input
+                      value={settings.linkedin_client_id}
+                      onChange={(e) => setSettings(prev => ({ ...prev, linkedin_client_id: e.target.value }))}
+                      placeholder="Your LinkedIn App Client ID"
+                      data-testid="linkedin-client-id-input"
+                      className="bg-black/30 border-white/10 font-mono text-sm"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label className="text-neutral-400 text-xs uppercase tracking-wider">Client Secret</Label>
+                    <Input
+                      type="password"
+                      value={settings.linkedin_client_secret}
+                      onChange={(e) => setSettings(prev => ({ ...prev, linkedin_client_secret: e.target.value }))}
+                      placeholder="Your LinkedIn App Client Secret"
+                      data-testid="linkedin-client-secret-input"
+                      className="bg-black/30 border-white/10 font-mono text-sm"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label className="text-neutral-400 text-xs uppercase tracking-wider">Redirect URI</Label>
+                    <Input
+                      value={settings.linkedin_redirect_uri}
+                      onChange={(e) => setSettings(prev => ({ ...prev, linkedin_redirect_uri: e.target.value }))}
+                      placeholder="https://your-domain.com/api/linkedin/callback"
+                      data-testid="linkedin-redirect-uri-input"
+                      className="bg-black/30 border-white/10 font-mono text-sm"
+                    />
+                    <p className="text-xs text-neutral-500 mt-1">
+                      Add this URL to your LinkedIn App's Authorized Redirect URLs
+                    </p>
+                  </div>
+
+                  <Button onClick={handleSave} disabled={saving} size="sm" className="w-full btn-primary">
+                    {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                    Save Credentials
+                  </Button>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Connect Button */}
             <Button
               onClick={handleConnectLinkedIn}
-              disabled={connectingLinkedIn}
+              disabled={connectingLinkedIn || !hasLinkedInCredentials}
               data-testid="connect-linkedin-btn"
-              className="w-full bg-[#0077B5] hover:bg-[#006097] text-white"
+              className={cn(
+                "w-full text-white",
+                hasLinkedInCredentials 
+                  ? "bg-[#0077B5] hover:bg-[#006097]" 
+                  : "bg-neutral-700 cursor-not-allowed"
+              )}
             >
               {connectingLinkedIn ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
                 <Link2 className="w-4 h-4 mr-2" />
               )}
-              Connect LinkedIn Account
+              {hasLinkedInCredentials ? 'Connect LinkedIn Account' : 'Configure Credentials First'}
             </Button>
-            <p className="text-xs text-neutral-500 text-center">
-              Requires LinkedIn API credentials configured in backend
-            </p>
           </div>
         )}
       </div>
