@@ -13,6 +13,7 @@ class LinkedInAuthorityEngineAPITester:
         self.tests_passed = 0
         self.test_post_id = None
         self.test_knowledge_id = None
+        self.test_voice_profile_id = None
         self.session = requests.Session()
         self.session.headers.update({'Content-Type': 'application/json'})
 
