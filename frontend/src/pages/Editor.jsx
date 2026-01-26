@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   Loader2, Save, Copy, Wand2, ArrowLeft, Check, Smartphone, Monitor,
-  Calendar, Clock, Send
+  Calendar, Clock, Send, Linkedin
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -36,7 +36,7 @@ import HookValidator from '@/components/HookValidator';
 import FrameworkEditor from '@/components/FrameworkEditor';
 import FrameworkSelector from '@/components/FrameworkSelector';
 import PillarSelector from '@/components/PillarSelector';
-import { getPost, createPost, updatePost, generateContent, schedulePost, publishPost } from '@/lib/api';
+import { getPost, createPost, updatePost, generateContent, schedulePost, publishPost, publishToLinkedIn, getSettings } from '@/lib/api';
 import { FRAMEWORKS, formatDate } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
@@ -48,6 +48,8 @@ export default function Editor() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [linkedInConnected, setLinkedInConnected] = useState(false);
+  const [publishingToLinkedIn, setPublishingToLinkedIn] = useState(false);
   const [copied, setCopied] = useState(false);
   const [previewMode, setPreviewMode] = useState('mobile');
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
