@@ -426,7 +426,28 @@ class LinkedInAuthorityEngineAPITester:
         self.test_ai_suggest_topics()
         self.test_ai_improve_hook()
         
+        # Phase 2 Features - Knowledge Vault
+        print("\n📚 Testing Knowledge Vault endpoints...")
+        self.test_create_knowledge_item()
+        self.test_get_knowledge_items()
+        self.test_get_knowledge_item_by_id()
+        self.test_add_knowledge_from_url()
+        self.test_extract_gems()
+        
+        # Phase 2 Features - Analytics
+        print("\n📊 Testing Analytics endpoints...")
+        self.test_performance_metrics()
+        self.test_pillar_recommendation()
+        
+        # Phase 2 Features - Scheduling & Publishing
+        print("\n📅 Testing Scheduling & Publishing endpoints...")
+        self.test_schedule_post()
+        self.test_publish_post()
+        self.test_engagement_active()
+        
         # Cleanup
+        print("\n🧹 Cleaning up test data...")
+        self.test_delete_knowledge_item()
         self.test_delete_post()
         
         # Results
