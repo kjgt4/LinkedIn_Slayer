@@ -63,6 +63,13 @@ export const extractGems = (id) => api.post(`/knowledge/${id}/extract-gems`);
 export const getPerformanceMetrics = () => api.get('/analytics/performance');
 export const getPillarRecommendation = () => api.get('/analytics/pillar-recommendation');
 
+// Inspiration URLs
+export const getInspirationUrls = (favoritesOnly = false) => api.get('/inspiration-urls', { params: { favorites_only: favoritesOnly } });
+export const saveInspirationUrl = (url, title) => api.post('/inspiration-urls', null, { params: { url, title } });
+export const toggleFavoriteUrl = (id) => api.put(`/inspiration-urls/${id}/favorite`);
+export const deleteInspirationUrl = (id) => api.delete(`/inspiration-urls/${id}`);
+export const saveInspirationToVault = (id) => api.post(`/inspiration-urls/${id}/to-vault`);
+
 // LinkedIn Integration
 export const getLinkedInAuthUrl = () => api.get('/linkedin/auth');
 export const disconnectLinkedIn = () => api.post('/linkedin/disconnect');
