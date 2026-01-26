@@ -1,24 +1,49 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, RefreshCw, ArrowRight, Link, Loader2 } from 'lucide-react';
-import { suggestTopics } from '@/lib/api';
+import { Sparkles, RefreshCw, ArrowRight, Link, Loader2, Star, History, Database, ChevronDown, X } from 'lucide-react';
+import { suggestTopics, getInspirationUrls, saveInspirationUrl, toggleFavoriteUrl, deleteInspirationUrl, saveInspirationToVault } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 import { PILLARS, FRAMEWORKS } from '@/lib/utils';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function TopicSuggestions({ onSelect }) {
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [inspirationUrl, setInspirationUrl] = useState('');
+  const [urlHistory, setUrlHistory] = useState([]);
+  const [savingToVault, setSavingToVault] = useState(null);
+
+  const fetchUrlHistory = async () => {
+    try {
+      const response = await getInspirationUrls();
+      setUrlHistory(response.data);
+    } catch (error) {
+      console.error('Failed to fetch URL history:', error);
+    }
+  };
 
   const fetchSuggestions = async (url = inspirationUrl) => {
     setLoading(true);
     try {
+      // Save URL to history if provided
+      if (url && url.trim()) {
+        await saveInspirationUrl(url.trim());
+        fetchUrlHistory();
+      }
+      
       const response = await suggestTopics(null, url || null);
       setSuggestions(response.data);
     } catch (error) {
       console.error('Failed to fetch suggestions:', error);
-      // Fallback suggestions
       setSuggestions([
         { topic: "The one hiring mistake that cost me $50k", pillar: "growth", framework: "slay", angle: "Personal failure story" },
         { topic: "Why your LinkedIn posts get 12 views", pillar: "tam", framework: "pas", angle: "Algorithm pain point" },
@@ -31,6 +56,7 @@ export default function TopicSuggestions({ onSelect }) {
 
   useEffect(() => {
     fetchSuggestions('');
+    fetchUrlHistory();
   }, []);
 
   const handleRefresh = () => {
@@ -42,6 +68,47 @@ export default function TopicSuggestions({ onSelect }) {
       fetchSuggestions(inspirationUrl);
     }
   };
+
+  const handleSelectFromHistory = (url) => {
+    setInspirationUrl(url);
+    fetchSuggestions(url);
+  };
+
+  const handleToggleFavorite = async (e, urlItem) => {
+    e.stopPropagation();
+    try {
+      await toggleFavoriteUrl(urlItem.id);
+      fetchUrlHistory();
+    } catch (error) {
+      toast.error('Failed to update favorite');
+    }
+  };
+
+  const handleDeleteUrl = async (e, urlItem) => {
+    e.stopPropagation();
+    try {
+      await deleteInspirationUrl(urlItem.id);
+      fetchUrlHistory();
+      toast.success('URL removed from history');
+    } catch (error) {
+      toast.error('Failed to delete URL');
+    }
+  };
+
+  const handleSaveToVault = async (urlItem) => {
+    setSavingToVault(urlItem.id);
+    try {
+      await saveInspirationToVault(urlItem.id);
+      toast.success('Saved to Knowledge Vault!');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to save to vault');
+    } finally {
+      setSavingToVault(null);
+    }
+  };
+
+  const favoriteUrls = urlHistory.filter(u => u.is_favorite);
+  const recentUrls = urlHistory.filter(u => !u.is_favorite).slice(0, 5);
 
   return (
     <div className="space-y-4">
@@ -67,21 +134,151 @@ export default function TopicSuggestions({ onSelect }) {
         </Button>
       </div>
 
-      {/* Inspiration URL Input */}
+      {/* Inspiration URL Input with History Dropdown */}
       <div className="space-y-2">
         <label className="text-xs text-neutral-500 uppercase tracking-wider flex items-center gap-1">
           <Link className="w-3 h-3" />
           Inspiration
         </label>
         <div className="flex gap-2">
-          <Input
-            value={inspirationUrl}
-            onChange={(e) => setInspirationUrl(e.target.value)}
-            onKeyDown={handleUrlKeyDown}
-            placeholder="Paste URL for content inspiration..."
-            data-testid="inspiration-url-input"
-            className="bg-black/30 border-white/10 focus:border-electric-blue text-sm"
-          />
+          <div className="relative flex-1">
+            <Input
+              value={inspirationUrl}
+              onChange={(e) => setInspirationUrl(e.target.value)}
+              onKeyDown={handleUrlKeyDown}
+              placeholder="Paste URL for content inspiration..."
+              data-testid="inspiration-url-input"
+              className="bg-black/30 border-white/10 focus:border-electric-blue text-sm pr-10"
+            />
+            {inspirationUrl && (
+              <button
+                onClick={() => setInspirationUrl('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          
+          {/* History Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                data-testid="url-history-btn"
+                className="text-neutral-400 hover:text-white border border-white/10"
+              >
+                <History className="w-4 h-4" />
+                <ChevronDown className="w-3 h-3 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80 bg-charcoal border-white/10">
+              {favoriteUrls.length > 0 && (
+                <>
+                  <DropdownMenuLabel className="text-xs text-amber-400 flex items-center gap-1">
+                    <Star className="w-3 h-3 fill-current" />
+                    Favorites
+                  </DropdownMenuLabel>
+                  {favoriteUrls.map((urlItem) => (
+                    <DropdownMenuItem
+                      key={urlItem.id}
+                      onClick={() => handleSelectFromHistory(urlItem.url)}
+                      className="cursor-pointer group"
+                    >
+                      <div className="flex items-center justify-between w-full gap-2">
+                        <span className="truncate text-sm flex-1">{urlItem.title || urlItem.url}</span>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => handleToggleFavorite(e, urlItem)}
+                            className="p-1 hover:bg-white/10 rounded"
+                          >
+                            <Star className="w-3 h-3 text-amber-400 fill-current" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSaveToVault(urlItem);
+                            }}
+                            disabled={savingToVault === urlItem.id}
+                            className="p-1 hover:bg-white/10 rounded"
+                          >
+                            {savingToVault === urlItem.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin text-electric-blue" />
+                            ) : (
+                              <Database className="w-3 h-3 text-electric-blue" />
+                            )}
+                          </button>
+                          <button
+                            onClick={(e) => handleDeleteUrl(e, urlItem)}
+                            className="p-1 hover:bg-white/10 rounded"
+                          >
+                            <X className="w-3 h-3 text-red-400" />
+                          </button>
+                        </div>
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator className="bg-white/10" />
+                </>
+              )}
+              
+              {recentUrls.length > 0 && (
+                <>
+                  <DropdownMenuLabel className="text-xs text-neutral-500">
+                    Recent
+                  </DropdownMenuLabel>
+                  {recentUrls.map((urlItem) => (
+                    <DropdownMenuItem
+                      key={urlItem.id}
+                      onClick={() => handleSelectFromHistory(urlItem.url)}
+                      className="cursor-pointer group"
+                    >
+                      <div className="flex items-center justify-between w-full gap-2">
+                        <span className="truncate text-sm flex-1">{urlItem.title || urlItem.url}</span>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => handleToggleFavorite(e, urlItem)}
+                            className="p-1 hover:bg-white/10 rounded"
+                          >
+                            <Star className="w-3 h-3 text-neutral-500 hover:text-amber-400" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSaveToVault(urlItem);
+                            }}
+                            disabled={savingToVault === urlItem.id}
+                            className="p-1 hover:bg-white/10 rounded"
+                          >
+                            {savingToVault === urlItem.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin text-electric-blue" />
+                            ) : (
+                              <Database className="w-3 h-3 text-neutral-500 hover:text-electric-blue" />
+                            )}
+                          </button>
+                          <button
+                            onClick={(e) => handleDeleteUrl(e, urlItem)}
+                            className="p-1 hover:bg-white/10 rounded"
+                          >
+                            <X className="w-3 h-3 text-neutral-500 hover:text-red-400" />
+                          </button>
+                        </div>
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+              
+              {urlHistory.length === 0 && (
+                <div className="px-2 py-4 text-center text-sm text-neutral-500">
+                  No URL history yet
+                </div>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Generate button */}
           {inspirationUrl && (
             <Button
               variant="ghost"
@@ -100,7 +297,7 @@ export default function TopicSuggestions({ onSelect }) {
           )}
         </div>
         <p className="text-xs text-neutral-600">
-          Add a URL to steer AI suggestions towards specific topics
+          Add a URL to steer AI suggestions • Click <History className="w-3 h-3 inline" /> for history
         </p>
       </div>
 
