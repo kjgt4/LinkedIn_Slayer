@@ -16,55 +16,35 @@ Build a web app based on the LinkedIn Authority Engine PRD - an AI-powered conte
 5. **Content Calendar**: 4-3-2-1 strategy (4 posts/week, 3 pillars, 2 frameworks, 1 CTA)
 6. **Mobile Preview**: Real-time LinkedIn post preview
 
-## What's Been Implemented (January 26, 2026)
+## What's Been Implemented
 
-### Backend (FastAPI + MongoDB)
-- ✅ User Settings CRUD with AI provider/model configuration
-- ✅ Posts CRUD with framework sections, pillars, scheduling
-- ✅ Calendar week endpoint with pillar balance tracking
-- ✅ AI content generation endpoint (Claude/OpenAI/Gemini)
-- ✅ Topic suggestions endpoint
-- ✅ Hook improvement endpoint
-- ✅ Hook validation endpoint (8-word rule, score 0-100)
-- ✅ Emergent Universal Key integration
-
-### Frontend (React + Tailwind + shadcn/ui)
-- ✅ Dashboard with weekly calendar, topic suggestions, framework guides
-- ✅ Content Editor with split view (editor + mobile preview)
-- ✅ SLAY/PAS framework selection and structured editor
-- ✅ Growth/TAM/Sales pillar selection
-- ✅ Hook validator with real-time feedback and AI suggestions
+### Phase 1 - MVP (January 26, 2026)
+- ✅ User Settings with AI provider/model configuration
+- ✅ Posts CRUD with framework sections, pillars
+- ✅ Calendar week view with pillar balance tracking
+- ✅ AI content generation (Claude/OpenAI/Gemini via Emergent Key)
+- ✅ Topic suggestions with Knowledge Vault integration
+- ✅ Hook validator with 8-word rule, score 0-100
 - ✅ Mobile phone mockup preview
 - ✅ Copy-to-clipboard publishing
-- ✅ Content Library with filters and CRUD
-- ✅ Settings page with AI model selection
+- ✅ Dark obsidian theme with professional UI
 
-### Design
-- ✅ Dark obsidian theme (#0A0A0A)
-- ✅ Electric blue accents (#007AFF)
-- ✅ Barlow Condensed headings, Inter body text
-- ✅ Glass-morphism sidebar
-- ✅ Responsive layout
-
-## Prioritized Backlog
-
-### P0 (Critical)
-- All MVP features implemented ✅
-
-### P1 (High Priority - Phase 2)
-- Knowledge Vault (document upload, voice notes)
-- Voice Profile Engine
-- LinkedIn API integration for direct publishing
-
-### P2 (Medium Priority - Phase 3)
-- Strategic Arbitrage (trend monitoring)
-- Authority jacking suggestions
-- Hook library with performance data
-
-### P3 (Future - Phase 4)
-- 30-minute engagement timer
-- AI-suggested comment replies
-- Analytics integration
+### Phase 2 - Enhanced Features (January 26, 2026)
+- ✅ **Post Scheduling**: Schedule posts to calendar slots (Morning/Midday/Afternoon/Evening)
+- ✅ **30-Minute Engagement Timer**: Browser notifications when posts need engagement
+- ✅ **Knowledge Vault**: Store expertise for AI-powered content
+  - Text notes, SOPs, transcripts
+  - URL content import
+  - PDF/file uploads
+  - AI gem extraction (identifies monetizable expertise)
+  - Tag organization
+- ✅ **Performance Analytics Dashboard**
+  - Total posts and published count
+  - Pillar performance (Growth/TAM/Sales with engagement metrics)
+  - Framework performance (SLAY/PAS comparison)
+  - Weekly engagement trend chart
+  - AI Strategy Recommendations
+  - Top performing posts ranking
 
 ## Technical Architecture
 - **Frontend**: React 19, Tailwind CSS, shadcn/ui, React Router
@@ -72,8 +52,57 @@ Build a web app based on the LinkedIn Authority Engine PRD - an AI-powered conte
 - **Database**: MongoDB
 - **AI**: Claude Sonnet 4.5 via Emergent Universal Key
 
+## API Endpoints
+### Content
+- `POST /api/posts` - Create post
+- `GET /api/posts` - List posts
+- `PUT /api/posts/{id}` - Update post
+- `DELETE /api/posts/{id}` - Delete post
+- `POST /api/posts/{id}/schedule` - Schedule post
+- `POST /api/posts/{id}/publish` - Publish post (starts engagement timer)
+
+### Knowledge Vault
+- `GET /api/knowledge` - List knowledge items
+- `POST /api/knowledge` - Create item
+- `POST /api/knowledge/upload` - Upload file
+- `POST /api/knowledge/url` - Import from URL
+- `POST /api/knowledge/{id}/extract-gems` - AI gem extraction
+
+### Analytics
+- `GET /api/analytics/performance` - Get performance metrics
+- `GET /api/analytics/pillar-recommendation` - Get AI strategy recommendation
+
+### AI
+- `POST /api/ai/generate-content` - Generate post content
+- `POST /api/ai/suggest-topics` - Get topic suggestions
+- `POST /api/ai/improve-hook` - Improve hook with AI
+
+## Prioritized Backlog
+
+### P0 (Critical) - COMPLETED
+- All MVP features ✅
+- Post scheduling ✅
+- Engagement timer ✅
+- Knowledge Vault ✅
+- Analytics dashboard ✅
+
+### P1 (High Priority - Future)
+- LinkedIn API integration for direct publishing
+- Voice Profile Engine (tone matching)
+- Multiple user accounts/workspaces
+
+### P2 (Medium Priority)
+- Strategic Arbitrage (trend monitoring)
+- Authority jacking suggestions
+- Hook library with historical performance
+
+### P3 (Future)
+- AI-suggested comment replies
+- A/B testing for hooks
+- Team collaboration features
+
 ## Next Tasks
-1. Add scheduling functionality to posts
-2. Implement 30-minute engagement timer
-3. Add LinkedIn API integration for direct publishing
-4. Build Knowledge Vault for document upload
+1. LinkedIn API integration for 1-click publishing
+2. Voice profile matching in AI generation
+3. Export content calendar to other tools
+4. Mobile app companion
