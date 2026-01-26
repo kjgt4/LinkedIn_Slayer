@@ -61,4 +61,19 @@ export const extractGems = (id) => api.post(`/knowledge/${id}/extract-gems`);
 export const getPerformanceMetrics = () => api.get('/analytics/performance');
 export const getPillarRecommendation = () => api.get('/analytics/pillar-recommendation');
 
+// LinkedIn Integration
+export const getLinkedInAuthUrl = () => api.get('/linkedin/auth');
+export const disconnectLinkedIn = () => api.post('/linkedin/disconnect');
+export const publishToLinkedIn = (postId) => api.post(`/linkedin/publish/${postId}`);
+
+// Voice Profiles
+export const getVoiceProfiles = () => api.get('/voice-profiles');
+export const getActiveVoiceProfile = () => api.get('/voice-profiles/active');
+export const getVoiceProfile = (id) => api.get(`/voice-profiles/${id}`);
+export const createVoiceProfile = (data) => api.post('/voice-profiles', data);
+export const updateVoiceProfile = (id, data) => api.put(`/voice-profiles/${id}`, data);
+export const deleteVoiceProfile = (id) => api.delete(`/voice-profiles/${id}`);
+export const activateVoiceProfile = (id) => api.post(`/voice-profiles/${id}/activate`);
+export const analyzeWritingSamples = (samples) => api.post('/voice-profiles/analyze-samples', samples);
+
 export default api;
