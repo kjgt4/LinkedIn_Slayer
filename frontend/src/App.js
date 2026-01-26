@@ -7,6 +7,7 @@ import Settings from "@/pages/Settings";
 import Library from "@/pages/Library";
 import KnowledgeVault from "@/pages/KnowledgeVault";
 import Analytics from "@/pages/Analytics";
+import VoiceProfile from "@/pages/VoiceProfile";
 import Layout from "@/components/Layout";
 import EngagementTimer from "@/components/EngagementTimer";
 
@@ -21,6 +22,7 @@ function App() {
             <Route path="editor/:postId" element={<Editor />} />
             <Route path="library" element={<Library />} />
             <Route path="vault" element={<KnowledgeVault />} />
+            <Route path="voice" element={<VoiceProfile />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="settings" element={<Settings />} />
           </Route>
