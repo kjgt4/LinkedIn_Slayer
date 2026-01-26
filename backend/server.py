@@ -133,6 +133,9 @@ class Post(BaseModel):
     engagement_timer_start: Optional[str] = None
     word_count: int = 0
     hook_word_count: int = 0
+    # LinkedIn integration
+    linkedin_post_id: Optional[str] = None
+    linkedin_post_url: Optional[str] = None
     # Performance metrics
     views: int = 0
     likes: int = 0
