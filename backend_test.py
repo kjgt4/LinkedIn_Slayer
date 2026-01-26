@@ -589,9 +589,24 @@ class LinkedInAuthorityEngineAPITester:
         self.test_publish_post()
         self.test_engagement_active()
         
+        # Phase 3 Features - Voice Profiles
+        print("\n🎤 Testing Voice Profile endpoints...")
+        self.test_get_voice_profiles()
+        self.test_create_voice_profile()
+        self.test_get_voice_profile_by_id()
+        self.test_activate_voice_profile()
+        self.test_get_active_voice_profile()
+        self.test_analyze_writing_samples()
+        
+        # Phase 3 Features - LinkedIn Integration
+        print("\n🔗 Testing LinkedIn Integration endpoints...")
+        self.test_linkedin_auth_url()
+        self.test_linkedin_disconnect()
+        
         # Cleanup
         print("\n🧹 Cleaning up test data...")
         self.test_delete_knowledge_item()
+        self.test_delete_voice_profile()
         self.test_delete_post()
         
         # Results
