@@ -397,7 +397,24 @@ export default function Editor() {
             </DialogContent>
           </Dialog>
 
-          {/* Publish Button */}
+          {/* LinkedIn Publish Button */}
+          {linkedInConnected && post.status !== 'published' && postId && (
+            <Button
+              onClick={handlePublishToLinkedIn}
+              disabled={publishingToLinkedIn}
+              data-testid="publish-to-linkedin-btn"
+              className="bg-[#0077B5] hover:bg-[#006097] text-white"
+            >
+              {publishingToLinkedIn ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Linkedin className="w-4 h-4 mr-2" />
+              )}
+              Publish to LinkedIn
+            </Button>
+          )}
+
+          {/* Regular Publish Button */}
           {post.status !== 'published' && postId && (
             <Button
               onClick={handlePublish}
