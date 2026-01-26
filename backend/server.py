@@ -833,6 +833,24 @@ async def generate_content(request: ContentGenerationRequest):
         if gems:
             knowledge_context = f"\n\nUser's expertise gems to potentially incorporate: {', '.join(gems[:5])}"
     
+    # Get active voice profile
+    voice_context = ""
+    voice_profile = await db.voice_profiles.find_one({"is_active": True}, {"_id": 0})
+    if voice_profile:
+        voice_context = f"""
+VOICE PROFILE TO MATCH:
+- Tone: {voice_profile.get('tone', 'professional')}
+- Style: {voice_profile.get('vocabulary_style', 'business')}
+- Personality: {', '.join(voice_profile.get('personality_traits', []))}
+- Signature expressions to use: {', '.join(voice_profile.get('signature_expressions', [])[:3])}
+- Phrases to use: {', '.join(voice_profile.get('preferred_phrases', [])[:3])}
+- Phrases to AVOID: {', '.join(voice_profile.get('avoid_phrases', [])[:3])}
+- Industry: {voice_profile.get('industry_context', '')}
+- Target audience: {voice_profile.get('target_audience', '')}
+
+Match this voice profile closely - the writing should sound like it came from the same person who wrote the example posts.
+"""
+    
     framework_prompt = ""
     if request.framework == "slay":
         framework_prompt = """
@@ -866,6 +884,7 @@ Structure the output with clear sections marked [PROBLEM], [AGITATE], [SOLUTION]
 
 {pillar_context.get(request.pillar, "")}
 {knowledge_context}
+{voice_context}
 
 Writing rules:
 1. Use "How I" instead of "How To" - position as a practitioner
