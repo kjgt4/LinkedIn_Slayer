@@ -46,13 +46,35 @@ Build a web app based on the LinkedIn Authority Engine PRD - an AI-powered conte
   - AI Strategy Recommendations
   - Top performing posts ranking
 
+### Phase 3 - LinkedIn Integration & Voice Engine (January 26, 2026)
+- ✅ **LinkedIn API Integration**
+  - OAuth2 authentication flow
+  - 1-click publish directly to LinkedIn
+  - LinkedIn connection status in Settings
+  - Publish to LinkedIn button in Editor
+  - Tracks LinkedIn post ID and URL
+  - *Note: Requires LinkedIn API credentials (LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, LINKEDIN_REDIRECT_URI)*
+
+- ✅ **Voice Profile Engine**
+  - Create custom voice profiles
+  - Define tone (professional/casual/authoritative/friendly/inspirational)
+  - Vocabulary style (business/technical/conversational/academic/creative)
+  - Sentence structure preferences
+  - Personality traits
+  - Signature expressions
+  - Preferred/avoid phrases
+  - Industry context and target audience
+  - **AI Writing Analysis**: Paste 2-3 sample posts and AI extracts your unique voice
+  - Active voice profile automatically applied to AI content generation
+
 ## Technical Architecture
 - **Frontend**: React 19, Tailwind CSS, shadcn/ui, React Router
 - **Backend**: FastAPI, Motor (async MongoDB), emergentintegrations
 - **Database**: MongoDB
 - **AI**: Claude Sonnet 4.5 via Emergent Universal Key
 
-## API Endpoints
+## API Endpoints (v3.0.0)
+
 ### Content
 - `POST /api/posts` - Create post
 - `GET /api/posts` - List posts
@@ -60,6 +82,7 @@ Build a web app based on the LinkedIn Authority Engine PRD - an AI-powered conte
 - `DELETE /api/posts/{id}` - Delete post
 - `POST /api/posts/{id}/schedule` - Schedule post
 - `POST /api/posts/{id}/publish` - Publish post (starts engagement timer)
+- `POST /api/posts/{id}/unschedule` - Remove scheduling
 
 ### Knowledge Vault
 - `GET /api/knowledge` - List knowledge items
@@ -72,10 +95,36 @@ Build a web app based on the LinkedIn Authority Engine PRD - an AI-powered conte
 - `GET /api/analytics/performance` - Get performance metrics
 - `GET /api/analytics/pillar-recommendation` - Get AI strategy recommendation
 
+### Voice Profiles
+- `GET /api/voice-profiles` - List profiles
+- `GET /api/voice-profiles/active` - Get active profile
+- `POST /api/voice-profiles` - Create profile
+- `PUT /api/voice-profiles/{id}` - Update profile
+- `DELETE /api/voice-profiles/{id}` - Delete profile
+- `POST /api/voice-profiles/{id}/activate` - Set as active
+- `POST /api/voice-profiles/analyze-samples` - AI analyzes writing samples
+
+### LinkedIn Integration
+- `GET /api/linkedin/auth` - Get OAuth authorization URL
+- `GET /api/linkedin/callback` - Handle OAuth callback
+- `POST /api/linkedin/disconnect` - Disconnect account
+- `POST /api/linkedin/publish/{post_id}` - Publish to LinkedIn
+
 ### AI
-- `POST /api/ai/generate-content` - Generate post content
+- `POST /api/ai/generate-content` - Generate post content (uses active voice profile)
 - `POST /api/ai/suggest-topics` - Get topic suggestions
 - `POST /api/ai/improve-hook` - Improve hook with AI
+
+## LinkedIn API Setup Required
+To enable LinkedIn publishing, add these to `/app/backend/.env`:
+```
+LINKEDIN_CLIENT_ID=your_client_id
+LINKEDIN_CLIENT_SECRET=your_client_secret
+LINKEDIN_REDIRECT_URI=https://your-domain.com/api/linkedin/callback
+FRONTEND_URL=https://your-domain.com
+```
+
+Get credentials from: https://www.linkedin.com/developers/apps
 
 ## Prioritized Backlog
 
@@ -85,11 +134,13 @@ Build a web app based on the LinkedIn Authority Engine PRD - an AI-powered conte
 - Engagement timer ✅
 - Knowledge Vault ✅
 - Analytics dashboard ✅
+- LinkedIn API integration ✅
+- Voice Profile Engine ✅
 
 ### P1 (High Priority - Future)
-- LinkedIn API integration for direct publishing
-- Voice Profile Engine (tone matching)
 - Multiple user accounts/workspaces
+- Team collaboration features
+- LinkedIn analytics sync
 
 ### P2 (Medium Priority)
 - Strategic Arbitrage (trend monitoring)
@@ -99,10 +150,10 @@ Build a web app based on the LinkedIn Authority Engine PRD - an AI-powered conte
 ### P3 (Future)
 - AI-suggested comment replies
 - A/B testing for hooks
-- Team collaboration features
+- Chrome extension for LinkedIn
 
 ## Next Tasks
-1. LinkedIn API integration for 1-click publishing
-2. Voice profile matching in AI generation
-3. Export content calendar to other tools
+1. Configure LinkedIn API credentials for production use
+2. Add LinkedIn analytics sync to pull engagement metrics
+3. Implement multi-user/workspace support
 4. Mobile app companion
