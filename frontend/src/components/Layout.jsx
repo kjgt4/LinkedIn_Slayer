@@ -1,6 +1,10 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, PenSquare, FolderOpen, Settings, Zap, Database, BarChart3, Mic } from 'lucide-react';
+import { LayoutDashboard, PenSquare, FolderOpen, Settings, Zap, Database, BarChart3, Mic, Users, MessageCircle } from 'lucide-react';
+import { UserButton, useUser } from '@clerk/clerk-react';
 import { cn } from '@/lib/utils';
+import { useEffect } from 'react';
+import { setTokenGetter } from '@/lib/api';
+import { useAuth } from '@clerk/clerk-react';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -8,12 +12,21 @@ const navItems = [
   { path: '/library', icon: FolderOpen, label: 'Library' },
   { path: '/vault', icon: Database, label: 'Vault' },
   { path: '/voice', icon: Mic, label: 'Voice' },
+  { path: '/influencers', icon: Users, label: 'Influencers' },
+  { path: '/engagement', icon: MessageCircle, label: 'Engage' },
   { path: '/analytics', icon: BarChart3, label: 'Analytics' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
 
 export default function Layout() {
   const location = useLocation();
+  const { user } = useUser();
+  const { getToken } = useAuth();
+
+  // Set up token getter for API calls
+  useEffect(() => {
+    setTokenGetter(getToken);
+  }, [getToken]);
 
   return (
     <div className="flex min-h-screen">
@@ -57,6 +70,33 @@ export default function Layout() {
             })}
           </ul>
         </nav>
+
+        {/* User Profile Section */}
+        <div className="p-4 border-t border-white/10">
+          <div className="flex items-center gap-3">
+            <UserButton 
+              afterSignOutUrl="/sign-in"
+              appearance={{
+                elements: {
+                  avatarBox: "w-10 h-10",
+                  userButtonPopoverCard: "bg-slate-900 border border-slate-700",
+                  userButtonPopoverActionButton: "text-white hover:bg-slate-800",
+                  userButtonPopoverActionButtonText: "text-white",
+                  userButtonPopoverActionButtonIcon: "text-slate-400",
+                  userButtonPopoverFooter: "hidden",
+                },
+              }}
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white truncate" data-testid="user-name">
+                {user?.firstName || user?.primaryEmailAddress?.emailAddress?.split('@')[0] || 'User'}
+              </p>
+              <p className="text-xs text-neutral-500 truncate">
+                {user?.primaryEmailAddress?.emailAddress || ''}
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* Footer */}
         <div className="p-4 border-t border-white/10">

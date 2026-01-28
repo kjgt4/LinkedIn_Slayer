@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, Depends
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -14,6 +14,8 @@ import json
 import re
 import aiofiles
 import httpx
+from auth import OptionalUserId, RequiredUserId, ClerkAuthError
+from engagement_hub import create_engagement_router
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -42,9 +44,28 @@ logger = logging.getLogger(__name__)
 
 # ============== Models ==============
 
+class User(BaseModel):
+    """User model synced from Clerk"""
+    model_config = ConfigDict(extra="ignore")
+    id: str  # Clerk user ID
+    email: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    image_url: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class UserSync(BaseModel):
+    """Request body for syncing user from Clerk"""
+    email: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    image_url: Optional[str] = None
+
 class UserSettings(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str  # Clerk user ID - required for multi-user isolation
     ai_provider: Literal["anthropic", "openai", "gemini"] = "anthropic"
     ai_model: str = "claude-sonnet-4-5-20250929"
     api_key: Optional[str] = None
@@ -80,6 +101,7 @@ class UserSettingsUpdate(BaseModel):
 class InspirationUrl(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str  # Clerk user ID
     url: str
     title: Optional[str] = None
     is_favorite: bool = False
@@ -91,10 +113,11 @@ class InspirationUrl(BaseModel):
 class VoiceProfile(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str  # Clerk user ID
     name: str = "Default Voice"
-    tone: str = "professional"  # professional, casual, authoritative, friendly
-    vocabulary_style: str = "business"  # business, technical, conversational, academic
-    sentence_structure: str = "varied"  # short, varied, complex
+    tone: str = "professional"
+    vocabulary_style: str = "business"
+    sentence_structure: str = "varied"
     personality_traits: List[str] = Field(default_factory=lambda: ["confident", "helpful"])
     avoid_phrases: List[str] = Field(default_factory=list)
     preferred_phrases: List[str] = Field(default_factory=list)
@@ -136,6 +159,7 @@ class VoiceProfileUpdate(BaseModel):
 class Post(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str  # Clerk user ID
     title: str = ""
     content: str = ""
     hook: str = ""
@@ -151,10 +175,8 @@ class Post(BaseModel):
     engagement_timer_start: Optional[str] = None
     word_count: int = 0
     hook_word_count: int = 0
-    # LinkedIn integration
     linkedin_post_id: Optional[str] = None
     linkedin_post_url: Optional[str] = None
-    # Performance metrics
     views: int = 0
     likes: int = 0
     comments: int = 0
@@ -219,6 +241,7 @@ class TopicSuggestion(BaseModel):
 class KnowledgeItem(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str  # Clerk user ID
     title: str
     content: str = ""
     source_type: Literal["text", "url", "pdf", "transcript", "voice_note", "sop"] = "text"
@@ -268,11 +291,11 @@ def deserialize_datetime(doc):
         doc['updated_at'] = datetime.fromisoformat(doc['updated_at'])
     return doc
 
-async def get_user_settings():
-    """Get or create default user settings"""
-    settings = await db.user_settings.find_one({}, {"_id": 0})
+async def get_user_settings(user_id: str):
+    """Get or create user settings for a specific user"""
+    settings = await db.user_settings.find_one({"user_id": user_id}, {"_id": 0})
     if not settings:
-        default_settings = UserSettings()
+        default_settings = UserSettings(user_id=user_id)
         doc = default_settings.model_dump()
         doc['created_at'] = serialize_datetime(doc['created_at'])
         doc['updated_at'] = serialize_datetime(doc['updated_at'])
@@ -280,9 +303,9 @@ async def get_user_settings():
         return default_settings
     return UserSettings(**deserialize_datetime(settings))
 
-async def get_llm_chat(session_id: str, system_message: str):
+async def get_llm_chat(user_id: str, session_id: str, system_message: str):
     """Initialize LLM chat with user's configured provider"""
-    settings = await get_user_settings()
+    settings = await get_user_settings(user_id)
     
     if settings.use_emergent_key:
         api_key = os.environ.get('EMERGENT_LLM_KEY')
@@ -300,46 +323,94 @@ async def get_llm_chat(session_id: str, system_message: str):
     chat.with_model(settings.ai_provider, settings.ai_model)
     return chat
 
+# ============== Auth Routes ==============
+
+@api_router.get("/auth/me")
+async def get_current_user(user_id: RequiredUserId):
+    """Get current authenticated user info"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+@api_router.post("/auth/sync")
+async def sync_user(user_data: UserSync, user_id: RequiredUserId):
+    """Sync user data from Clerk to database"""
+    existing_user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    
+    now = datetime.now(timezone.utc)
+    if existing_user:
+        # Update existing user
+        update_data = {
+            "email": user_data.email,
+            "first_name": user_data.first_name,
+            "last_name": user_data.last_name,
+            "image_url": user_data.image_url,
+            "updated_at": serialize_datetime(now)
+        }
+        await db.users.update_one({"id": user_id}, {"$set": update_data})
+    else:
+        # Create new user
+        user = User(
+            id=user_id,
+            email=user_data.email,
+            first_name=user_data.first_name,
+            last_name=user_data.last_name,
+            image_url=user_data.image_url,
+            created_at=now,
+            updated_at=now
+        )
+        doc = user.model_dump()
+        doc['created_at'] = serialize_datetime(doc['created_at'])
+        doc['updated_at'] = serialize_datetime(doc['updated_at'])
+        await db.users.insert_one(doc)
+    
+    # Ensure user has settings
+    await get_user_settings(user_id)
+    
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    return {"success": True, "user": user}
+
 # ============== Settings Routes ==============
 
 @api_router.get("/settings", response_model=UserSettings)
-async def get_settings():
-    return await get_user_settings()
+async def get_settings(user_id: RequiredUserId):
+    return await get_user_settings(user_id)
 
 @api_router.put("/settings", response_model=UserSettings)
-async def update_settings(update: UserSettingsUpdate):
-    settings = await get_user_settings()
+async def update_settings(update: UserSettingsUpdate, user_id: RequiredUserId):
+    settings = await get_user_settings(user_id)
     update_data = update.model_dump(exclude_unset=True)
     
     if update_data:
         update_data['updated_at'] = serialize_datetime(datetime.now(timezone.utc))
         await db.user_settings.update_one(
-            {"id": settings.id},
+            {"user_id": user_id},
             {"$set": update_data}
         )
     
-    return await get_user_settings()
+    return await get_user_settings(user_id)
 
 # ============== Posts Routes ==============
 
 @api_router.get("/posts", response_model=List[Post])
-async def get_posts(status: Optional[str] = None):
-    query = {}
+async def get_posts(user_id: RequiredUserId, status: Optional[str] = None):
+    query = {"user_id": user_id}
     if status:
         query["status"] = status
     posts = await db.posts.find(query, {"_id": 0}).to_list(1000)
     return [Post(**deserialize_datetime(p)) for p in posts]
 
 @api_router.get("/posts/{post_id}", response_model=Post)
-async def get_post(post_id: str):
-    post = await db.posts.find_one({"id": post_id}, {"_id": 0})
+async def get_post(post_id: str, user_id: RequiredUserId):
+    post = await db.posts.find_one({"id": post_id, "user_id": user_id}, {"_id": 0})
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
     return Post(**deserialize_datetime(post))
 
 @api_router.post("/posts", response_model=Post)
-async def create_post(post_create: PostCreate):
-    post = Post(**post_create.model_dump())
+async def create_post(post_create: PostCreate, user_id: RequiredUserId):
+    post = Post(user_id=user_id, **post_create.model_dump())
     post.word_count = len(post.content.split()) if post.content else 0
     post.hook_word_count = len(post.hook.split()) if post.hook else 0
     
@@ -351,8 +422,8 @@ async def create_post(post_create: PostCreate):
     return post
 
 @api_router.put("/posts/{post_id}", response_model=Post)
-async def update_post(post_id: str, update: PostUpdate):
-    post = await db.posts.find_one({"id": post_id}, {"_id": 0})
+async def update_post(post_id: str, update: PostUpdate, user_id: RequiredUserId):
+    post = await db.posts.find_one({"id": post_id, "user_id": user_id}, {"_id": 0})
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
     
@@ -360,20 +431,19 @@ async def update_post(post_id: str, update: PostUpdate):
     if update_data:
         update_data['updated_at'] = serialize_datetime(datetime.now(timezone.utc))
         
-        # Recalculate word counts if content/hook changed
         if 'content' in update_data:
             update_data['word_count'] = len(update_data['content'].split()) if update_data['content'] else 0
         if 'hook' in update_data:
             update_data['hook_word_count'] = len(update_data['hook'].split()) if update_data['hook'] else 0
         
-        await db.posts.update_one({"id": post_id}, {"$set": update_data})
+        await db.posts.update_one({"id": post_id, "user_id": user_id}, {"$set": update_data})
     
-    updated_post = await db.posts.find_one({"id": post_id}, {"_id": 0})
+    updated_post = await db.posts.find_one({"id": post_id, "user_id": user_id}, {"_id": 0})
     return Post(**deserialize_datetime(updated_post))
 
 @api_router.delete("/posts/{post_id}")
-async def delete_post(post_id: str):
-    result = await db.posts.delete_one({"id": post_id})
+async def delete_post(post_id: str, user_id: RequiredUserId):
+    result = await db.posts.delete_one({"id": post_id, "user_id": user_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Post not found")
     return {"message": "Post deleted successfully"}
@@ -381,14 +451,15 @@ async def delete_post(post_id: str):
 # ============== Post Scheduling Routes ==============
 
 @api_router.post("/posts/{post_id}/schedule")
-async def schedule_post(post_id: str, scheduled_date: str, scheduled_slot: int, scheduled_time: Optional[str] = None):
+async def schedule_post(post_id: str, scheduled_date: str, scheduled_slot: int, user_id: RequiredUserId, scheduled_time: Optional[str] = None):
     """Schedule a post to a specific date and slot"""
-    post = await db.posts.find_one({"id": post_id}, {"_id": 0})
+    post = await db.posts.find_one({"id": post_id, "user_id": user_id}, {"_id": 0})
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
     
-    # Check if slot is available
+    # Check if slot is available for this user
     existing = await db.posts.find_one({
+        "user_id": user_id,
         "scheduled_date": scheduled_date,
         "scheduled_slot": scheduled_slot,
         "id": {"$ne": post_id}
@@ -405,14 +476,14 @@ async def schedule_post(post_id: str, scheduled_date: str, scheduled_slot: int, 
         "updated_at": serialize_datetime(datetime.now(timezone.utc))
     }
     
-    await db.posts.update_one({"id": post_id}, {"$set": update_data})
-    updated_post = await db.posts.find_one({"id": post_id}, {"_id": 0})
+    await db.posts.update_one({"id": post_id, "user_id": user_id}, {"$set": update_data})
+    updated_post = await db.posts.find_one({"id": post_id, "user_id": user_id}, {"_id": 0})
     return Post(**deserialize_datetime(updated_post))
 
 @api_router.post("/posts/{post_id}/publish")
-async def publish_post(post_id: str):
+async def publish_post(post_id: str, user_id: RequiredUserId):
     """Mark a post as published and start engagement timer"""
-    post = await db.posts.find_one({"id": post_id}, {"_id": 0})
+    post = await db.posts.find_one({"id": post_id, "user_id": user_id}, {"_id": 0})
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
     
@@ -424,14 +495,14 @@ async def publish_post(post_id: str):
         "updated_at": serialize_datetime(now)
     }
     
-    await db.posts.update_one({"id": post_id}, {"$set": update_data})
-    updated_post = await db.posts.find_one({"id": post_id}, {"_id": 0})
+    await db.posts.update_one({"id": post_id, "user_id": user_id}, {"$set": update_data})
+    updated_post = await db.posts.find_one({"id": post_id, "user_id": user_id}, {"_id": 0})
     return Post(**deserialize_datetime(updated_post))
 
 @api_router.post("/posts/{post_id}/unschedule")
-async def unschedule_post(post_id: str):
+async def unschedule_post(post_id: str, user_id: RequiredUserId):
     """Remove scheduling from a post"""
-    post = await db.posts.find_one({"id": post_id}, {"_id": 0})
+    post = await db.posts.find_one({"id": post_id, "user_id": user_id}, {"_id": 0})
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
     
@@ -443,18 +514,19 @@ async def unschedule_post(post_id: str):
         "updated_at": serialize_datetime(datetime.now(timezone.utc))
     }
     
-    await db.posts.update_one({"id": post_id}, {"$set": update_data})
-    updated_post = await db.posts.find_one({"id": post_id}, {"_id": 0})
+    await db.posts.update_one({"id": post_id, "user_id": user_id}, {"$set": update_data})
+    updated_post = await db.posts.find_one({"id": post_id, "user_id": user_id}, {"_id": 0})
     return Post(**deserialize_datetime(updated_post))
 
 # ============== Engagement Timer Routes ==============
 
 @api_router.get("/engagement/active")
-async def get_active_engagement():
+async def get_active_engagement(user_id: RequiredUserId):
     """Get posts with active engagement timers (published in last 30 minutes)"""
     thirty_mins_ago = datetime.now(timezone.utc) - timedelta(minutes=30)
     
     posts = await db.posts.find({
+        "user_id": user_id,
         "status": "published",
         "engagement_timer_start": {"$exists": True, "$ne": None}
     }, {"_id": 0}).to_list(100)
@@ -473,9 +545,9 @@ async def get_active_engagement():
     return active_posts
 
 @api_router.post("/posts/{post_id}/engagement-metrics")
-async def update_engagement_metrics(post_id: str, views: int = 0, likes: int = 0, comments: int = 0, shares: int = 0):
+async def update_engagement_metrics(post_id: str, user_id: RequiredUserId, views: int = 0, likes: int = 0, comments: int = 0, shares: int = 0):
     """Update engagement metrics for a post"""
-    post = await db.posts.find_one({"id": post_id}, {"_id": 0})
+    post = await db.posts.find_one({"id": post_id, "user_id": user_id}, {"_id": 0})
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
     
@@ -487,14 +559,14 @@ async def update_engagement_metrics(post_id: str, views: int = 0, likes: int = 0
         "updated_at": serialize_datetime(datetime.now(timezone.utc))
     }
     
-    await db.posts.update_one({"id": post_id}, {"$set": update_data})
-    updated_post = await db.posts.find_one({"id": post_id}, {"_id": 0})
+    await db.posts.update_one({"id": post_id, "user_id": user_id}, {"$set": update_data})
+    updated_post = await db.posts.find_one({"id": post_id, "user_id": user_id}, {"_id": 0})
     return Post(**deserialize_datetime(updated_post))
 
 # ============== Calendar Routes ==============
 
 @api_router.get("/calendar/week")
-async def get_week_calendar(week_offset: int = 0):
+async def get_week_calendar(user_id: RequiredUserId, week_offset: int = 0):
     """Get posts for a specific week (0 = current week)"""
     today = datetime.now(timezone.utc)
     start_of_week = today - timedelta(days=today.weekday()) + timedelta(weeks=week_offset)
@@ -505,7 +577,7 @@ async def get_week_calendar(week_offset: int = 0):
         week_dates.append(date.strftime("%Y-%m-%d"))
     
     posts = await db.posts.find(
-        {"scheduled_date": {"$in": week_dates}},
+        {"user_id": user_id, "scheduled_date": {"$in": week_dates}},
         {"_id": 0}
     ).to_list(100)
     
@@ -528,26 +600,26 @@ async def get_week_calendar(week_offset: int = 0):
 # ============== Knowledge Vault Routes ==============
 
 @api_router.get("/knowledge", response_model=List[KnowledgeItem])
-async def get_knowledge_items(source_type: Optional[str] = None):
-    """Get all knowledge items"""
-    query = {}
+async def get_knowledge_items(user_id: RequiredUserId, source_type: Optional[str] = None):
+    """Get all knowledge items for the user"""
+    query = {"user_id": user_id}
     if source_type:
         query["source_type"] = source_type
     items = await db.knowledge_vault.find(query, {"_id": 0}).to_list(1000)
     return [KnowledgeItem(**deserialize_datetime(i)) for i in items]
 
 @api_router.get("/knowledge/{item_id}", response_model=KnowledgeItem)
-async def get_knowledge_item(item_id: str):
+async def get_knowledge_item(item_id: str, user_id: RequiredUserId):
     """Get a single knowledge item"""
-    item = await db.knowledge_vault.find_one({"id": item_id}, {"_id": 0})
+    item = await db.knowledge_vault.find_one({"id": item_id, "user_id": user_id}, {"_id": 0})
     if not item:
         raise HTTPException(status_code=404, detail="Knowledge item not found")
     return KnowledgeItem(**deserialize_datetime(item))
 
 @api_router.post("/knowledge", response_model=KnowledgeItem)
-async def create_knowledge_item(item_create: KnowledgeItemCreate):
+async def create_knowledge_item(item_create: KnowledgeItemCreate, user_id: RequiredUserId):
     """Create a new knowledge item"""
-    item = KnowledgeItem(**item_create.model_dump())
+    item = KnowledgeItem(user_id=user_id, **item_create.model_dump())
     
     doc = item.model_dump()
     doc['created_at'] = serialize_datetime(doc['created_at'])
@@ -558,32 +630,30 @@ async def create_knowledge_item(item_create: KnowledgeItemCreate):
 
 @api_router.post("/knowledge/upload")
 async def upload_knowledge_file(
+    user_id: RequiredUserId,
     file: UploadFile = File(...),
     title: str = Form(...),
     source_type: str = Form("pdf"),
     tags: str = Form("")
 ):
     """Upload a file to the knowledge vault"""
-    # Save file
     file_id = str(uuid.uuid4())
     file_ext = file.filename.split('.')[-1] if '.' in file.filename else 'txt'
-    file_path = UPLOAD_DIR / f"{file_id}.{file_ext}"
+    file_path = UPLOAD_DIR / f"{user_id}_{file_id}.{file_ext}"
     
     async with aiofiles.open(file_path, 'wb') as f:
         content = await file.read()
         await f.write(content)
     
-    # Extract text content based on file type
     text_content = ""
     if file_ext in ['txt', 'md']:
         text_content = content.decode('utf-8', errors='ignore')
     elif file_ext == 'pdf':
-        # For PDFs, store the path - extraction would need a PDF library
         text_content = f"[PDF file uploaded: {file.filename}]"
     
-    # Create knowledge item
     tag_list = [t.strip() for t in tags.split(',') if t.strip()]
     item = KnowledgeItem(
+        user_id=user_id,
         title=title,
         content=text_content,
         source_type=source_type,
@@ -599,17 +669,18 @@ async def upload_knowledge_file(
     return item
 
 @api_router.post("/knowledge/url")
-async def add_knowledge_from_url(url: str, title: str, tags: List[str] = []):
+async def add_knowledge_from_url(url: str, title: str, user_id: RequiredUserId, tags: List[str] = []):
     """Add content from a URL to the knowledge vault"""
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(url, timeout=30.0)
             response.raise_for_status()
-            content = response.text[:50000]  # Limit content size
+            content = response.text[:50000]
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to fetch URL: {str(e)}")
     
     item = KnowledgeItem(
+        user_id=user_id,
         title=title,
         content=content,
         source_type="url",
@@ -625,40 +696,39 @@ async def add_knowledge_from_url(url: str, title: str, tags: List[str] = []):
     return item
 
 @api_router.put("/knowledge/{item_id}", response_model=KnowledgeItem)
-async def update_knowledge_item(item_id: str, update: KnowledgeItemUpdate):
+async def update_knowledge_item(item_id: str, update: KnowledgeItemUpdate, user_id: RequiredUserId):
     """Update a knowledge item"""
-    item = await db.knowledge_vault.find_one({"id": item_id}, {"_id": 0})
+    item = await db.knowledge_vault.find_one({"id": item_id, "user_id": user_id}, {"_id": 0})
     if not item:
         raise HTTPException(status_code=404, detail="Knowledge item not found")
     
     update_data = update.model_dump(exclude_unset=True)
     if update_data:
         update_data['updated_at'] = serialize_datetime(datetime.now(timezone.utc))
-        await db.knowledge_vault.update_one({"id": item_id}, {"$set": update_data})
+        await db.knowledge_vault.update_one({"id": item_id, "user_id": user_id}, {"$set": update_data})
     
-    updated_item = await db.knowledge_vault.find_one({"id": item_id}, {"_id": 0})
+    updated_item = await db.knowledge_vault.find_one({"id": item_id, "user_id": user_id}, {"_id": 0})
     return KnowledgeItem(**deserialize_datetime(updated_item))
 
 @api_router.delete("/knowledge/{item_id}")
-async def delete_knowledge_item(item_id: str):
+async def delete_knowledge_item(item_id: str, user_id: RequiredUserId):
     """Delete a knowledge item"""
-    item = await db.knowledge_vault.find_one({"id": item_id}, {"_id": 0})
+    item = await db.knowledge_vault.find_one({"id": item_id, "user_id": user_id}, {"_id": 0})
     if not item:
         raise HTTPException(status_code=404, detail="Knowledge item not found")
     
-    # Delete associated file if exists
     if item.get('file_path'):
         file_path = Path(item['file_path'])
         if file_path.exists():
             file_path.unlink()
     
-    await db.knowledge_vault.delete_one({"id": item_id})
+    await db.knowledge_vault.delete_one({"id": item_id, "user_id": user_id})
     return {"message": "Knowledge item deleted successfully"}
 
 @api_router.post("/knowledge/{item_id}/extract-gems")
-async def extract_gems(item_id: str):
+async def extract_gems(item_id: str, user_id: RequiredUserId):
     """Use AI to extract monetizable expertise gems from a knowledge item"""
-    item = await db.knowledge_vault.find_one({"id": item_id}, {"_id": 0})
+    item = await db.knowledge_vault.find_one({"id": item_id, "user_id": user_id}, {"_id": 0})
     if not item:
         raise HTTPException(status_code=404, detail="Knowledge item not found")
     
@@ -680,22 +750,21 @@ Output as JSON array:
 
     try:
         chat = await get_llm_chat(
+            user_id=user_id,
             session_id=f"gem-extract-{uuid.uuid4()}",
             system_message=system_message
         )
         
-        content = item.get('content', '')[:10000]  # Limit content
+        content = item.get('content', '')[:10000]
         response = await chat.send_message(UserMessage(text=f"Extract monetizable expertise gems from this content:\n\n{content}"))
         
-        # Parse JSON from response
         json_match = re.search(r'\[[\s\S]*\]', response)
         if json_match:
             gems_data = json.loads(json_match.group())
             gems = [g.get('gem', '') for g in gems_data if g.get('gem')]
             
-            # Update the knowledge item with extracted gems
             await db.knowledge_vault.update_one(
-                {"id": item_id},
+                {"id": item_id, "user_id": user_id},
                 {"$set": {
                     "extracted_gems": gems,
                     "updated_at": serialize_datetime(datetime.now(timezone.utc))
@@ -712,29 +781,28 @@ Output as JSON array:
 # ============== Inspiration URL Routes ==============
 
 @api_router.get("/inspiration-urls", response_model=List[InspirationUrl])
-async def get_inspiration_urls(favorites_only: bool = False):
-    """Get inspiration URL history, sorted by last used"""
-    query = {"is_favorite": True} if favorites_only else {}
+async def get_inspiration_urls(user_id: RequiredUserId, favorites_only: bool = False):
+    """Get inspiration URL history for the user"""
+    query = {"user_id": user_id}
+    if favorites_only:
+        query["is_favorite"] = True
     urls = await db.inspiration_urls.find(query, {"_id": 0}).sort("last_used", -1).to_list(50)
     return [InspirationUrl(**u) for u in urls]
 
 @api_router.post("/inspiration-urls")
-async def save_inspiration_url(url: str, title: Optional[str] = None):
+async def save_inspiration_url(url: str, user_id: RequiredUserId, title: Optional[str] = None):
     """Save or update an inspiration URL"""
-    # Check if URL already exists
-    existing = await db.inspiration_urls.find_one({"url": url}, {"_id": 0})
+    existing = await db.inspiration_urls.find_one({"url": url, "user_id": user_id}, {"_id": 0})
     
     if existing:
-        # Update use count and last_used
         await db.inspiration_urls.update_one(
-            {"url": url},
+            {"url": url, "user_id": user_id},
             {"$set": {"last_used": serialize_datetime(datetime.now(timezone.utc))}, "$inc": {"use_count": 1}}
         )
-        updated = await db.inspiration_urls.find_one({"url": url}, {"_id": 0})
+        updated = await db.inspiration_urls.find_one({"url": url, "user_id": user_id}, {"_id": 0})
         return InspirationUrl(**updated)
     
-    # Create new
-    inspiration = InspirationUrl(url=url, title=title)
+    inspiration = InspirationUrl(user_id=user_id, url=url, title=title)
     doc = inspiration.model_dump()
     doc['last_used'] = serialize_datetime(doc['last_used'])
     doc['created_at'] = serialize_datetime(doc['created_at'])
@@ -743,45 +811,43 @@ async def save_inspiration_url(url: str, title: Optional[str] = None):
     return inspiration
 
 @api_router.put("/inspiration-urls/{url_id}/favorite")
-async def toggle_favorite_url(url_id: str):
+async def toggle_favorite_url(url_id: str, user_id: RequiredUserId):
     """Toggle favorite status for an inspiration URL"""
-    url_doc = await db.inspiration_urls.find_one({"id": url_id}, {"_id": 0})
+    url_doc = await db.inspiration_urls.find_one({"id": url_id, "user_id": user_id}, {"_id": 0})
     if not url_doc:
         raise HTTPException(status_code=404, detail="URL not found")
     
     new_status = not url_doc.get("is_favorite", False)
     await db.inspiration_urls.update_one(
-        {"id": url_id},
+        {"id": url_id, "user_id": user_id},
         {"$set": {"is_favorite": new_status}}
     )
     
-    updated = await db.inspiration_urls.find_one({"id": url_id}, {"_id": 0})
+    updated = await db.inspiration_urls.find_one({"id": url_id, "user_id": user_id}, {"_id": 0})
     return InspirationUrl(**updated)
 
 @api_router.delete("/inspiration-urls/{url_id}")
-async def delete_inspiration_url(url_id: str):
+async def delete_inspiration_url(url_id: str, user_id: RequiredUserId):
     """Delete an inspiration URL from history"""
-    result = await db.inspiration_urls.delete_one({"id": url_id})
+    result = await db.inspiration_urls.delete_one({"id": url_id, "user_id": user_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="URL not found")
     return {"message": "URL deleted"}
 
 @api_router.post("/inspiration-urls/{url_id}/to-vault")
-async def save_inspiration_to_vault(url_id: str):
+async def save_inspiration_to_vault(url_id: str, user_id: RequiredUserId):
     """Save an inspiration URL to the Knowledge Vault"""
-    url_doc = await db.inspiration_urls.find_one({"id": url_id}, {"_id": 0})
+    url_doc = await db.inspiration_urls.find_one({"id": url_id, "user_id": user_id}, {"_id": 0})
     if not url_doc:
         raise HTTPException(status_code=404, detail="URL not found")
     
     url = url_doc.get("url")
     title = url_doc.get("title") or f"Inspiration: {url[:50]}..."
     
-    # Check if already in vault
-    existing = await db.knowledge_vault.find_one({"source_url": url}, {"_id": 0})
+    existing = await db.knowledge_vault.find_one({"source_url": url, "user_id": user_id}, {"_id": 0})
     if existing:
         return {"message": "URL already in Knowledge Vault", "item": KnowledgeItem(**deserialize_datetime(existing))}
     
-    # Fetch content
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(url, timeout=30.0, follow_redirects=True)
@@ -790,8 +856,8 @@ async def save_inspiration_to_vault(url_id: str):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to fetch URL: {str(e)}")
     
-    # Create knowledge item
     item = KnowledgeItem(
+        user_id=user_id,
         title=title,
         content=content,
         source_type="url",
@@ -809,12 +875,11 @@ async def save_inspiration_to_vault(url_id: str):
 # ============== Performance Analytics Routes ==============
 
 @api_router.get("/analytics/performance", response_model=PerformanceMetrics)
-async def get_performance_metrics():
-    """Get comprehensive performance analytics"""
-    all_posts = await db.posts.find({}, {"_id": 0}).to_list(1000)
+async def get_performance_metrics(user_id: RequiredUserId):
+    """Get comprehensive performance analytics for the user"""
+    all_posts = await db.posts.find({"user_id": user_id}, {"_id": 0}).to_list(1000)
     published_posts = [p for p in all_posts if p.get('status') == 'published']
     
-    # Calculate pillar performance
     pillar_stats = {"growth": [], "tam": [], "sales": []}
     framework_stats = {"slay": [], "pas": []}
     
@@ -847,7 +912,6 @@ async def get_performance_metrics():
         for framework, stats in framework_stats.items()
     }
     
-    # Get best performing posts
     sorted_posts = sorted(
         published_posts,
         key=lambda p: p.get('likes', 0) + p.get('comments', 0) * 2 + p.get('shares', 0) * 3,
@@ -862,7 +926,6 @@ async def get_performance_metrics():
         "engagement": p.get('likes', 0) + p.get('comments', 0) * 2 + p.get('shares', 0) * 3
     } for p in sorted_posts]
     
-    # Weekly trend (last 4 weeks)
     weekly_trend = []
     for week_offset in range(-3, 1):
         today = datetime.now(timezone.utc)
@@ -902,13 +965,12 @@ async def get_performance_metrics():
     )
 
 @api_router.get("/analytics/pillar-recommendation")
-async def get_pillar_recommendation():
+async def get_pillar_recommendation(user_id: RequiredUserId):
     """Get AI recommendation for optimal pillar distribution based on performance"""
-    metrics = await get_performance_metrics()
+    metrics = await get_performance_metrics(user_id)
     
     pillar_perf = metrics.pillar_performance
     
-    # Calculate optimal distribution based on performance
     total_engagement = sum(p.get('total_engagement', 0) for p in pillar_perf.values())
     
     if total_engagement == 0:
@@ -918,7 +980,6 @@ async def get_pillar_recommendation():
             "insight": "Not enough data yet. Follow the standard 4-3-2-1 framework."
         }
     
-    # Recommend based on what's working
     best_pillar = max(pillar_perf.items(), key=lambda x: x[1].get('avg_engagement', 0))
     
     return {
@@ -935,11 +996,10 @@ async def get_pillar_recommendation():
 # ============== AI Content Generation Routes ==============
 
 @api_router.post("/ai/generate-content")
-async def generate_content(request: ContentGenerationRequest):
+async def generate_content(request: ContentGenerationRequest, user_id: RequiredUserId):
     """Generate LinkedIn post content using AI"""
     
-    # Get knowledge vault content for context
-    knowledge_items = await db.knowledge_vault.find({}, {"_id": 0, "content": 1, "extracted_gems": 1}).to_list(10)
+    knowledge_items = await db.knowledge_vault.find({"user_id": user_id}, {"_id": 0, "content": 1, "extracted_gems": 1}).to_list(10)
     knowledge_context = ""
     if knowledge_items:
         gems = []
@@ -948,9 +1008,8 @@ async def generate_content(request: ContentGenerationRequest):
         if gems:
             knowledge_context = f"\n\nUser's expertise gems to potentially incorporate: {', '.join(gems[:5])}"
     
-    # Get active voice profile
     voice_context = ""
-    voice_profile = await db.voice_profiles.find_one({"is_active": True}, {"_id": 0})
+    voice_profile = await db.voice_profiles.find_one({"user_id": user_id, "is_active": True}, {"_id": 0})
     if voice_profile:
         voice_context = f"""
 VOICE PROFILE TO MATCH:
@@ -1022,6 +1081,7 @@ CTA: [Your call to action]
 
     try:
         chat = await get_llm_chat(
+            user_id=user_id,
             session_id=f"content-gen-{uuid.uuid4()}",
             system_message=system_message
         )
@@ -1042,33 +1102,26 @@ CTA: [Your call to action]
         raise HTTPException(status_code=500, detail=f"AI generation failed: {str(e)}")
 
 @api_router.post("/ai/suggest-topics", response_model=List[TopicSuggestion])
-async def suggest_topics(context: Optional[str] = None, inspiration_url: Optional[str] = None):
+async def suggest_topics(user_id: RequiredUserId, context: Optional[str] = None, inspiration_url: Optional[str] = None):
     """Generate topic suggestions for LinkedIn posts"""
     
-    # Fetch inspiration content from URL if provided
     inspiration_content = ""
     if inspiration_url:
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(inspiration_url, timeout=15.0, follow_redirects=True)
                 response.raise_for_status()
-                # Get text content and limit size
                 raw_content = response.text[:15000]
-                # Clean up HTML if present
                 import re as regex
-                # Remove script and style tags
                 raw_content = regex.sub(r'<script[^>]*>.*?</script>', '', raw_content, flags=regex.DOTALL)
                 raw_content = regex.sub(r'<style[^>]*>.*?</style>', '', raw_content, flags=regex.DOTALL)
-                # Remove HTML tags
                 raw_content = regex.sub(r'<[^>]+>', ' ', raw_content)
-                # Clean up whitespace
                 raw_content = regex.sub(r'\s+', ' ', raw_content).strip()
                 inspiration_content = f"\n\nINSPIRATION CONTENT from {inspiration_url}:\n{raw_content[:8000]}\n\nUse this content as inspiration to generate topic ideas that align with and relate to this material."
         except Exception as e:
             logger.warning(f"Failed to fetch inspiration URL: {str(e)}")
     
-    # Get knowledge vault gems for personalized suggestions
-    knowledge_items = await db.knowledge_vault.find({}, {"_id": 0, "extracted_gems": 1, "tags": 1}).to_list(20)
+    knowledge_items = await db.knowledge_vault.find({"user_id": user_id}, {"_id": 0, "extracted_gems": 1, "tags": 1}).to_list(20)
     expertise_context = ""
     if knowledge_items:
         all_gems = []
@@ -1098,6 +1151,7 @@ Output as JSON array with format:
 
     try:
         chat = await get_llm_chat(
+            user_id=user_id,
             session_id=f"topic-suggest-{uuid.uuid4()}",
             system_message=system_message
         )
@@ -1110,13 +1164,11 @@ Output as JSON array with format:
         
         response = await chat.send_message(UserMessage(text=prompt))
         
-        # Parse JSON from response
         json_match = re.search(r'\[[\s\S]*\]', response)
         if json_match:
             suggestions = json.loads(json_match.group())
             return [TopicSuggestion(**s) for s in suggestions[:5]]
         
-        # Fallback default suggestions
         return [
             TopicSuggestion(topic="The one hiring mistake that cost me $50k", pillar="growth", framework="slay", angle="Personal failure story"),
             TopicSuggestion(topic="Why your LinkedIn posts get 12 views", pillar="tam", framework="pas", angle="Algorithm pain point"),
@@ -1135,7 +1187,7 @@ Output as JSON array with format:
         ]
 
 @api_router.post("/ai/improve-hook")
-async def improve_hook(request: HookValidationRequest):
+async def improve_hook(request: HookValidationRequest, user_id: RequiredUserId):
     """Get AI suggestions to improve a hook"""
     
     system_message = """You are an expert LinkedIn hook writer. Analyze the given hook and provide 3 improved versions.
@@ -1157,6 +1209,7 @@ SUGGESTIONS:
 
     try:
         chat = await get_llm_chat(
+            user_id=user_id,
             session_id=f"hook-improve-{uuid.uuid4()}",
             system_message=system_message
         )
@@ -1172,7 +1225,7 @@ SUGGESTIONS:
 
 @api_router.post("/validate-hook", response_model=HookValidationResponse)
 async def validate_hook(request: HookValidationRequest):
-    """Validate a hook against the 8-word rule"""
+    """Validate a hook against the 8-word rule (no auth required)"""
     words = request.hook.strip().split()
     word_count = len(words)
     
@@ -1187,7 +1240,6 @@ async def validate_hook(request: HookValidationRequest):
         suggestions.append("Hook seems too short. Add more impact.")
         score -= 20
     
-    # Check for weak starts
     weak_starts = ["how to", "why you", "what you", "the best", "top 10"]
     hook_lower = request.hook.lower()
     for weak in weak_starts:
@@ -1196,7 +1248,6 @@ async def validate_hook(request: HookValidationRequest):
             score -= 15
             break
     
-    # Check for specific numbers
     if not re.search(r'\d', request.hook):
         suggestions.append("Consider adding a specific number or metric for credibility.")
         score -= 10
@@ -1212,15 +1263,14 @@ async def validate_hook(request: HookValidationRequest):
 
 # ============== LinkedIn Integration Routes ==============
 
-# LinkedIn OAuth Configuration (fallback to env vars, but prefer user settings)
 LINKEDIN_CLIENT_ID_ENV = os.environ.get('LINKEDIN_CLIENT_ID', '')
 LINKEDIN_CLIENT_SECRET_ENV = os.environ.get('LINKEDIN_CLIENT_SECRET', '')
 LINKEDIN_REDIRECT_URI_ENV = os.environ.get('LINKEDIN_REDIRECT_URI', '')
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
 
-async def get_linkedin_credentials():
+async def get_linkedin_credentials(user_id: str):
     """Get LinkedIn credentials from user settings or environment"""
-    settings = await get_user_settings()
+    settings = await get_user_settings(user_id)
     
     client_id = settings.linkedin_client_id or LINKEDIN_CLIENT_ID_ENV
     client_secret = settings.linkedin_client_secret or LINKEDIN_CLIENT_SECRET_ENV
@@ -1229,9 +1279,9 @@ async def get_linkedin_credentials():
     return client_id, client_secret, redirect_uri
 
 @api_router.get("/linkedin/auth")
-async def get_linkedin_auth_url():
+async def get_linkedin_auth_url(user_id: RequiredUserId):
     """Generate LinkedIn OAuth authorization URL"""
-    client_id, client_secret, redirect_uri = await get_linkedin_credentials()
+    client_id, client_secret, redirect_uri = await get_linkedin_credentials(user_id)
     
     if not client_id:
         raise HTTPException(status_code=400, detail="LinkedIn Client ID not configured. Please add your LinkedIn API credentials in Settings.")
@@ -1240,7 +1290,7 @@ async def get_linkedin_auth_url():
         raise HTTPException(status_code=400, detail="LinkedIn Redirect URI not configured. Please add it in Settings.")
     
     scopes = "r_emailaddress profile w_member_social openid"
-    state = str(uuid.uuid4())
+    state = f"{user_id}:{uuid.uuid4()}"
     
     auth_url = (
         f"https://www.linkedin.com/oauth/v2/authorization?"
@@ -1256,12 +1306,19 @@ async def get_linkedin_auth_url():
 @api_router.get("/linkedin/callback")
 async def linkedin_callback(code: str, state: Optional[str] = None):
     """Handle LinkedIn OAuth callback and exchange code for access token"""
-    client_id, client_secret, redirect_uri = await get_linkedin_credentials()
+    # Extract user_id from state
+    user_id = None
+    if state and ":" in state:
+        user_id = state.split(":")[0]
+    
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Invalid state parameter")
+    
+    client_id, client_secret, redirect_uri = await get_linkedin_credentials(user_id)
     
     if not client_id or not client_secret:
         raise HTTPException(status_code=400, detail="LinkedIn API credentials not configured")
     
-    # Exchange code for access token
     async with httpx.AsyncClient() as client:
         token_response = await client.post(
             "https://www.linkedin.com/oauth/v2/accessToken",
@@ -1281,9 +1338,8 @@ async def linkedin_callback(code: str, state: Optional[str] = None):
         
         token_data = token_response.json()
         access_token = token_data.get("access_token")
-        expires_in = token_data.get("expires_in", 5184000)  # Default 60 days
+        expires_in = token_data.get("expires_in", 5184000)
         
-        # Get user profile
         profile_response = await client.get(
             "https://api.linkedin.com/v2/userinfo",
             headers={"Authorization": f"Bearer {access_token}"}
@@ -1297,12 +1353,10 @@ async def linkedin_callback(code: str, state: Optional[str] = None):
         linkedin_user_id = profile_data.get("sub")
         linkedin_name = profile_data.get("name", "")
     
-    # Update user settings with LinkedIn connection
-    settings = await get_user_settings()
     expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
     
     await db.user_settings.update_one(
-        {"id": settings.id},
+        {"user_id": user_id},
         {"$set": {
             "linkedin_connected": True,
             "linkedin_access_token": access_token,
@@ -1313,17 +1367,14 @@ async def linkedin_callback(code: str, state: Optional[str] = None):
         }}
     )
     
-    # Redirect to frontend with success
     from fastapi.responses import RedirectResponse
     return RedirectResponse(url=f"{FRONTEND_URL}/settings?linkedin=connected")
 
 @api_router.post("/linkedin/disconnect")
-async def disconnect_linkedin():
+async def disconnect_linkedin(user_id: RequiredUserId):
     """Disconnect LinkedIn account"""
-    settings = await get_user_settings()
-    
     await db.user_settings.update_one(
-        {"id": settings.id},
+        {"user_id": user_id},
         {"$set": {
             "linkedin_connected": False,
             "linkedin_access_token": None,
@@ -1337,29 +1388,25 @@ async def disconnect_linkedin():
     return {"message": "LinkedIn disconnected successfully"}
 
 @api_router.post("/linkedin/publish/{post_id}")
-async def publish_to_linkedin(post_id: str):
+async def publish_to_linkedin(post_id: str, user_id: RequiredUserId):
     """Publish a post directly to LinkedIn"""
-    settings = await get_user_settings()
+    settings = await get_user_settings(user_id)
     
     if not settings.linkedin_connected or not settings.linkedin_access_token:
         raise HTTPException(status_code=400, detail="LinkedIn account not connected")
     
-    # Check if token is expired
     if settings.linkedin_token_expires:
         expires_at = datetime.fromisoformat(settings.linkedin_token_expires.replace('Z', '+00:00'))
         if expires_at < datetime.now(timezone.utc):
             raise HTTPException(status_code=401, detail="LinkedIn token expired. Please reconnect your account.")
     
-    # Get the post
-    post = await db.posts.find_one({"id": post_id}, {"_id": 0})
+    post = await db.posts.find_one({"id": post_id, "user_id": user_id}, {"_id": 0})
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
     
-    # Format post content for LinkedIn
     full_content = f"{post.get('hook', '')}\n\n{post.get('rehook', '')}\n\n{post.get('content', '')}"
     full_content = full_content.strip()
     
-    # Prepare LinkedIn post payload
     user_urn = f"urn:li:person:{settings.linkedin_user_id}"
     
     post_data = {
@@ -1395,10 +1442,9 @@ async def publish_to_linkedin(post_id: str):
         linkedin_response = response.json()
         linkedin_post_id = linkedin_response.get("id", "")
     
-    # Update post with LinkedIn details
     now = datetime.now(timezone.utc)
     await db.posts.update_one(
-        {"id": post_id},
+        {"id": post_id, "user_id": user_id},
         {"$set": {
             "status": "published",
             "published_at": serialize_datetime(now),
@@ -1409,7 +1455,7 @@ async def publish_to_linkedin(post_id: str):
         }}
     )
     
-    updated_post = await db.posts.find_one({"id": post_id}, {"_id": 0})
+    updated_post = await db.posts.find_one({"id": post_id, "user_id": user_id}, {"_id": 0})
     return {
         "success": True,
         "linkedin_post_id": linkedin_post_id,
@@ -1419,31 +1465,31 @@ async def publish_to_linkedin(post_id: str):
 # ============== Voice Profile Routes ==============
 
 @api_router.get("/voice-profiles", response_model=List[VoiceProfile])
-async def get_voice_profiles():
-    """Get all voice profiles"""
-    profiles = await db.voice_profiles.find({}, {"_id": 0}).to_list(100)
+async def get_voice_profiles(user_id: RequiredUserId):
+    """Get all voice profiles for the user"""
+    profiles = await db.voice_profiles.find({"user_id": user_id}, {"_id": 0}).to_list(100)
     return [VoiceProfile(**deserialize_datetime(p)) for p in profiles]
 
 @api_router.get("/voice-profiles/active", response_model=Optional[VoiceProfile])
-async def get_active_voice_profile():
+async def get_active_voice_profile(user_id: RequiredUserId):
     """Get the currently active voice profile"""
-    profile = await db.voice_profiles.find_one({"is_active": True}, {"_id": 0})
+    profile = await db.voice_profiles.find_one({"user_id": user_id, "is_active": True}, {"_id": 0})
     if profile:
         return VoiceProfile(**deserialize_datetime(profile))
     return None
 
 @api_router.get("/voice-profiles/{profile_id}", response_model=VoiceProfile)
-async def get_voice_profile(profile_id: str):
+async def get_voice_profile(profile_id: str, user_id: RequiredUserId):
     """Get a specific voice profile"""
-    profile = await db.voice_profiles.find_one({"id": profile_id}, {"_id": 0})
+    profile = await db.voice_profiles.find_one({"id": profile_id, "user_id": user_id}, {"_id": 0})
     if not profile:
         raise HTTPException(status_code=404, detail="Voice profile not found")
     return VoiceProfile(**deserialize_datetime(profile))
 
 @api_router.post("/voice-profiles", response_model=VoiceProfile)
-async def create_voice_profile(profile_create: VoiceProfileCreate):
+async def create_voice_profile(profile_create: VoiceProfileCreate, user_id: RequiredUserId):
     """Create a new voice profile"""
-    profile = VoiceProfile(**profile_create.model_dump())
+    profile = VoiceProfile(user_id=user_id, **profile_create.model_dump())
     
     doc = profile.model_dump()
     doc['created_at'] = serialize_datetime(doc['created_at'])
@@ -1453,9 +1499,9 @@ async def create_voice_profile(profile_create: VoiceProfileCreate):
     return profile
 
 @api_router.put("/voice-profiles/{profile_id}", response_model=VoiceProfile)
-async def update_voice_profile(profile_id: str, update: VoiceProfileUpdate):
+async def update_voice_profile(profile_id: str, update: VoiceProfileUpdate, user_id: RequiredUserId):
     """Update a voice profile"""
-    profile = await db.voice_profiles.find_one({"id": profile_id}, {"_id": 0})
+    profile = await db.voice_profiles.find_one({"id": profile_id, "user_id": user_id}, {"_id": 0})
     if not profile:
         raise HTTPException(status_code=404, detail="Voice profile not found")
     
@@ -1463,47 +1509,44 @@ async def update_voice_profile(profile_id: str, update: VoiceProfileUpdate):
     if update_data:
         update_data['updated_at'] = serialize_datetime(datetime.now(timezone.utc))
         
-        # If setting this profile as active, deactivate others
         if update_data.get('is_active'):
             await db.voice_profiles.update_many(
-                {"id": {"$ne": profile_id}},
+                {"user_id": user_id, "id": {"$ne": profile_id}},
                 {"$set": {"is_active": False}}
             )
         
-        await db.voice_profiles.update_one({"id": profile_id}, {"$set": update_data})
+        await db.voice_profiles.update_one({"id": profile_id, "user_id": user_id}, {"$set": update_data})
     
-    updated_profile = await db.voice_profiles.find_one({"id": profile_id}, {"_id": 0})
+    updated_profile = await db.voice_profiles.find_one({"id": profile_id, "user_id": user_id}, {"_id": 0})
     return VoiceProfile(**deserialize_datetime(updated_profile))
 
 @api_router.delete("/voice-profiles/{profile_id}")
-async def delete_voice_profile(profile_id: str):
+async def delete_voice_profile(profile_id: str, user_id: RequiredUserId):
     """Delete a voice profile"""
-    result = await db.voice_profiles.delete_one({"id": profile_id})
+    result = await db.voice_profiles.delete_one({"id": profile_id, "user_id": user_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Voice profile not found")
     return {"message": "Voice profile deleted successfully"}
 
 @api_router.post("/voice-profiles/{profile_id}/activate")
-async def activate_voice_profile(profile_id: str):
+async def activate_voice_profile(profile_id: str, user_id: RequiredUserId):
     """Set a voice profile as the active one"""
-    profile = await db.voice_profiles.find_one({"id": profile_id}, {"_id": 0})
+    profile = await db.voice_profiles.find_one({"id": profile_id, "user_id": user_id}, {"_id": 0})
     if not profile:
         raise HTTPException(status_code=404, detail="Voice profile not found")
     
-    # Deactivate all profiles
-    await db.voice_profiles.update_many({}, {"$set": {"is_active": False}})
+    await db.voice_profiles.update_many({"user_id": user_id}, {"$set": {"is_active": False}})
     
-    # Activate selected profile
     await db.voice_profiles.update_one(
-        {"id": profile_id},
+        {"id": profile_id, "user_id": user_id},
         {"$set": {"is_active": True, "updated_at": serialize_datetime(datetime.now(timezone.utc))}}
     )
     
-    updated_profile = await db.voice_profiles.find_one({"id": profile_id}, {"_id": 0})
+    updated_profile = await db.voice_profiles.find_one({"id": profile_id, "user_id": user_id}, {"_id": 0})
     return VoiceProfile(**deserialize_datetime(updated_profile))
 
 @api_router.post("/voice-profiles/analyze-samples")
-async def analyze_writing_samples(samples: List[str]):
+async def analyze_writing_samples(samples: List[str], user_id: RequiredUserId):
     """Analyze writing samples to generate a voice profile"""
     if not samples or len(samples) < 2:
         raise HTTPException(status_code=400, detail="Please provide at least 2 writing samples")
@@ -1528,6 +1571,7 @@ Provide a JSON response with:
 
     try:
         chat = await get_llm_chat(
+            user_id=user_id,
             session_id=f"voice-analyze-{uuid.uuid4()}",
             system_message=system_message
         )
@@ -1535,7 +1579,6 @@ Provide a JSON response with:
         samples_text = "\n\n---SAMPLE---\n\n".join(samples)
         response = await chat.send_message(UserMessage(text=f"Analyze these writing samples:\n\n{samples_text}"))
         
-        # Parse JSON from response
         json_match = re.search(r'\{[\s\S]*\}', response)
         if json_match:
             analysis = json.loads(json_match.group())
@@ -1550,10 +1593,14 @@ Provide a JSON response with:
 
 @api_router.get("/")
 async def root():
-    return {"message": "LinkedIn Authority Engine API", "version": "3.0.0"}
+    return {"message": "LinkedIn Authority Engine API", "version": "4.0.0"}
 
 # Include the router in the main app
 app.include_router(api_router)
+
+# Include the engagement hub router
+engagement_router = create_engagement_router(db, get_llm_chat, get_user_settings)
+app.include_router(engagement_router)
 
 app.add_middleware(
     CORSMiddleware,
