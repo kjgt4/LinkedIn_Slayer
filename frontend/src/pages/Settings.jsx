@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Loader2, Save, Key, Cpu, Check, Linkedin, Link2, Unlink, Settings2, ExternalLink } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Loader2, Save, Key, Cpu, Check, Linkedin, Link2, Unlink, Settings2, ExternalLink, CreditCard, Crown, Calendar, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,7 +29,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { getSettings, updateSettings, getLinkedInAuthUrl, disconnectLinkedIn } from '@/lib/api';
+import { getSettings, updateSettings, getLinkedInAuthUrl, disconnectLinkedIn, subscriptionAPI } from '@/lib/api';
+import { useSubscription } from '@/hooks/useSubscription';
+import { UsageDashboard, GracePeriodBanner } from '@/components/subscription';
 import { cn } from '@/lib/utils';
 
 const PROVIDERS = [
