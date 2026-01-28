@@ -63,10 +63,13 @@ const MODELS = {
 
 export default function Settings() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { subscription, usage, tier, effectiveTier, isInGracePeriod, refresh: refreshSubscription } = useSubscription();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [connectingLinkedIn, setConnectingLinkedIn] = useState(false);
   const [linkedInConfigOpen, setLinkedInConfigOpen] = useState(false);
+  const [cancellingSubscription, setCancellingSubscription] = useState(false);
   const [settings, setSettings] = useState({
     ai_provider: 'anthropic',
     ai_model: 'claude-sonnet-4-5-20250929',
@@ -86,7 +89,41 @@ export default function Settings() {
     if (searchParams.get('linkedin') === 'connected') {
       toast.success('LinkedIn connected successfully!');
     }
+    
+    // Check for subscription success
+    if (searchParams.get('subscription') === 'success') {
+      const sessionId = searchParams.get('session_id');
+      if (sessionId) {
+        pollCheckoutStatus(sessionId);
+      }
+    }
   }, [searchParams]);
+
+  const pollCheckoutStatus = async (sessionId, attempts = 0) => {
+    const maxAttempts = 5;
+    const pollInterval = 2000;
+
+    if (attempts >= maxAttempts) {
+      toast.info('Payment processing. Check back shortly.');
+      return;
+    }
+
+    try {
+      const res = await subscriptionAPI.getCheckoutStatus(sessionId);
+      if (res.data.payment_status === 'paid') {
+        toast.success(`Welcome to ${res.data.tier}! Your subscription is now active.`);
+        refreshSubscription();
+        // Clear URL params
+        navigate('/settings', { replace: true });
+        return;
+      }
+      
+      // Continue polling
+      setTimeout(() => pollCheckoutStatus(sessionId, attempts + 1), pollInterval);
+    } catch (error) {
+      console.error('Failed to check payment status:', error);
+    }
+  };
 
   const fetchSettings = async () => {
     setLoading(true);
