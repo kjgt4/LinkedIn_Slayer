@@ -175,7 +175,7 @@ def create_engagement_router(db, get_llm_chat_func, get_user_settings_func):
     
     @router.get("/influencers", response_model=List[TrackedInfluencer])
     async def get_influencers(
-        user_id: str,
+        user_id: RequiredUserId,
         theme: Optional[str] = None,
         priority: Optional[str] = None,
         status: Optional[str] = None,
@@ -197,7 +197,7 @@ def create_engagement_router(db, get_llm_chat_func, get_user_settings_func):
         return [TrackedInfluencer(**deserialize_datetime(i)) for i in influencers]
     
     @router.get("/influencers/{influencer_id}", response_model=TrackedInfluencer)
-    async def get_influencer(influencer_id: str, user_id: str):
+    async def get_influencer(influencer_id: str, user_id: RequiredUserId):
         """Get single influencer"""
         influencer = await db.tracked_influencers.find_one(
             {"id": influencer_id, "user_id": user_id}, {"_id": 0}
@@ -207,7 +207,7 @@ def create_engagement_router(db, get_llm_chat_func, get_user_settings_func):
         return TrackedInfluencer(**deserialize_datetime(influencer))
     
     @router.post("/influencers", response_model=TrackedInfluencer)
-    async def create_influencer(data: TrackedInfluencerCreate, user_id: str):
+    async def create_influencer(data: TrackedInfluencerCreate, user_id: RequiredUserId):
         """Add new influencer to track"""
         influencer = TrackedInfluencer(user_id=user_id, **data.model_dump())
         
@@ -220,7 +220,7 @@ def create_engagement_router(db, get_llm_chat_func, get_user_settings_func):
         return influencer
     
     @router.put("/influencers/{influencer_id}", response_model=TrackedInfluencer)
-    async def update_influencer(influencer_id: str, data: TrackedInfluencerUpdate, user_id: str):
+    async def update_influencer(influencer_id: str, data: TrackedInfluencerUpdate, user_id: RequiredUserId):
         """Update influencer"""
         influencer = await db.tracked_influencers.find_one(
             {"id": influencer_id, "user_id": user_id}, {"_id": 0}
@@ -241,7 +241,7 @@ def create_engagement_router(db, get_llm_chat_func, get_user_settings_func):
         return TrackedInfluencer(**deserialize_datetime(updated))
     
     @router.delete("/influencers/{influencer_id}")
-    async def delete_influencer(influencer_id: str, user_id: str):
+    async def delete_influencer(influencer_id: str, user_id: RequiredUserId):
         """Delete influencer and their tracked posts"""
         result = await db.tracked_influencers.delete_one(
             {"id": influencer_id, "user_id": user_id}
@@ -260,7 +260,7 @@ def create_engagement_router(db, get_llm_chat_func, get_user_settings_func):
     
     @router.get("/tracked-posts", response_model=List[TrackedPost])
     async def get_tracked_posts(
-        user_id: str,
+        user_id: RequiredUserId,
         influencer_id: Optional[str] = None,
         status: Optional[str] = None,
         sort: Optional[str] = "discovered_at"
@@ -276,7 +276,7 @@ def create_engagement_router(db, get_llm_chat_func, get_user_settings_func):
         return [TrackedPost(**deserialize_datetime(p)) for p in posts]
     
     @router.get("/tracked-posts/queue")
-    async def get_engagement_queue(user_id: str):
+    async def get_engagement_queue(user_id: RequiredUserId):
         """Get prioritized engagement queue"""
         # Get posts with status new or draft_ready
         posts = await db.tracked_posts.find(
@@ -312,7 +312,7 @@ def create_engagement_router(db, get_llm_chat_func, get_user_settings_func):
         return [deserialize_datetime(p) for p in enriched_posts]
     
     @router.get("/tracked-posts/{post_id}", response_model=TrackedPost)
-    async def get_tracked_post(post_id: str, user_id: str):
+    async def get_tracked_post(post_id: str, user_id: RequiredUserId):
         """Get single tracked post"""
         post = await db.tracked_posts.find_one(
             {"id": post_id, "user_id": user_id}, {"_id": 0}
@@ -322,7 +322,7 @@ def create_engagement_router(db, get_llm_chat_func, get_user_settings_func):
         return TrackedPost(**deserialize_datetime(post))
     
     @router.post("/tracked-posts", response_model=TrackedPost)
-    async def create_tracked_post(data: TrackedPostCreate, user_id: str):
+    async def create_tracked_post(data: TrackedPostCreate, user_id: RequiredUserId):
         """Add new post to track"""
         # Verify influencer exists
         influencer = await db.tracked_influencers.find_one(
@@ -342,7 +342,7 @@ def create_engagement_router(db, get_llm_chat_func, get_user_settings_func):
         return post
     
     @router.put("/tracked-posts/{post_id}", response_model=TrackedPost)
-    async def update_tracked_post(post_id: str, data: TrackedPostUpdate, user_id: str):
+    async def update_tracked_post(post_id: str, data: TrackedPostUpdate, user_id: RequiredUserId):
         """Update tracked post"""
         post = await db.tracked_posts.find_one(
             {"id": post_id, "user_id": user_id}, {"_id": 0}
@@ -363,7 +363,7 @@ def create_engagement_router(db, get_llm_chat_func, get_user_settings_func):
         return TrackedPost(**deserialize_datetime(updated))
     
     @router.delete("/tracked-posts/{post_id}")
-    async def delete_tracked_post(post_id: str, user_id: str):
+    async def delete_tracked_post(post_id: str, user_id: RequiredUserId):
         """Delete tracked post"""
         result = await db.tracked_posts.delete_one(
             {"id": post_id, "user_id": user_id}
@@ -373,7 +373,7 @@ def create_engagement_router(db, get_llm_chat_func, get_user_settings_func):
         return {"message": "Post deleted"}
     
     @router.post("/tracked-posts/{post_id}/mark-engaged")
-    async def mark_post_engaged(post_id: str, data: MarkEngagedRequest, user_id: str):
+    async def mark_post_engaged(post_id: str, data: MarkEngagedRequest, user_id: RequiredUserId):
         """Mark post as engaged"""
         post = await db.tracked_posts.find_one(
             {"id": post_id, "user_id": user_id}, {"_id": 0}
@@ -406,7 +406,7 @@ def create_engagement_router(db, get_llm_chat_func, get_user_settings_func):
     # ============== AI Comment Drafting ==============
     
     @router.post("/ai/draft-engagement-comment", response_model=DraftCommentResponse)
-    async def draft_engagement_comment(data: DraftCommentRequest, user_id: str):
+    async def draft_engagement_comment(data: DraftCommentRequest, user_id: RequiredUserId):
         """Generate AI comment variations for engagement"""
         
         # Get influencer details
@@ -511,7 +511,7 @@ Output as JSON with this exact format:
     # ============== AI Discovery Assistant ==============
     
     @router.post("/ai/suggest-influencer-search", response_model=DiscoveryResponse)
-    async def suggest_influencer_search(data: DiscoveryRequest, user_id: str):
+    async def suggest_influencer_search(data: DiscoveryRequest, user_id: RequiredUserId):
         """Get AI suggestions for finding influencers"""
         
         system_message = f"""You are an expert LinkedIn networking strategist. Help the user find influential voices in their niche.
@@ -580,7 +580,7 @@ Output as JSON with this exact format:
     # ============== Engagement Analytics ==============
     
     @router.get("/analytics/engagement", response_model=EngagementAnalytics)
-    async def get_engagement_analytics(user_id: str):
+    async def get_engagement_analytics(user_id: RequiredUserId):
         """Get engagement analytics"""
         
         # Get counts
