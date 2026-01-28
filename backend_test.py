@@ -787,10 +787,24 @@ class LinkedInAuthorityEngineAPITester:
         self.test_linkedin_auth_url()
         self.test_linkedin_disconnect()
         
+        # Strategic Engagement Hub Features
+        print("\n🎯 Testing Strategic Engagement Hub endpoints...")
+        self.test_get_influencers()
+        self.test_create_influencer()
+        self.test_get_tracked_posts()
+        self.test_get_engagement_queue()
+        self.test_create_tracked_post()
+        self.test_ai_draft_engagement_comment()
+        self.test_ai_suggest_influencer_search()
+        self.test_engagement_analytics()
+        self.test_mark_post_engaged()
+        
         # Cleanup
         print("\n🧹 Cleaning up test data...")
         self.test_delete_knowledge_item()
         self.test_delete_voice_profile()
+        self.test_delete_tracked_post()
+        self.test_delete_influencer()
         self.test_delete_post()
         
         # Results
