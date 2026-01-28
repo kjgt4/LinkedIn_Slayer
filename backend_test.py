@@ -712,6 +712,111 @@ class LinkedInAuthorityEngineAPITester:
         except Exception as e:
             return self.log_test("Delete Influencer", False, str(e))
 
+    # ============== Subscription System Tests ==============
+
+    def test_get_pricing_default(self):
+        """Test GET /api/pricing endpoint (public, no auth required)"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/pricing")
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                required_fields = ['currency', 'currency_symbol', 'currency_name', 'tiers']
+                success = all(field in data for field in required_fields)
+                if success:
+                    # Check if all three tiers exist
+                    tiers = data.get('tiers', {})
+                    success = all(tier in tiers for tier in ['free', 'basic', 'premium'])
+            return self.log_test("GET /api/pricing (default)", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("GET /api/pricing (default)", False, str(e))
+
+    def test_get_pricing_currencies(self):
+        """Test GET /api/pricing for all supported currencies"""
+        currencies = ['aud', 'usd', 'eur', 'gbp']
+        all_passed = True
+        
+        for currency in currencies:
+            try:
+                response = self.session.get(f"{self.base_url}/api/pricing", params={'currency': currency})
+                success = response.status_code == 200
+                if success:
+                    data = response.json()
+                    success = data.get('currency') == currency
+                    if success:
+                        # Check pricing data exists
+                        basic_tier = data.get('tiers', {}).get('basic', {})
+                        premium_tier = data.get('tiers', {}).get('premium', {})
+                        success = basic_tier.get('monthly_price', 0) > 0 and premium_tier.get('monthly_price', 0) > 0
+                
+                test_passed = self.log_test(f"GET /api/pricing (currency={currency})", success, f"Status: {response.status_code}")
+                if not test_passed:
+                    all_passed = False
+            except Exception as e:
+                self.log_test(f"GET /api/pricing (currency={currency})", False, str(e))
+                all_passed = False
+        
+        return all_passed
+
+    def test_subscription_endpoints_no_auth(self):
+        """Test subscription endpoints without authentication (should fail)"""
+        endpoints = [
+            "/api/subscription",
+            "/api/subscription/usage",
+        ]
+        
+        all_passed = True
+        for endpoint in endpoints:
+            try:
+                response = self.session.get(f"{self.base_url}{endpoint}")
+                success = response.status_code in [401, 403]
+                test_passed = self.log_test(f"GET {endpoint} (no auth)", success, f"Status: {response.status_code}")
+                if not test_passed:
+                    all_passed = False
+            except Exception as e:
+                self.log_test(f"GET {endpoint} (no auth)", False, str(e))
+                all_passed = False
+        
+        return all_passed
+
+    def test_checkout_endpoint_no_auth(self):
+        """Test checkout endpoint without authentication (should fail)"""
+        try:
+            checkout_data = {
+                "tier": "basic",
+                "billing_cycle": "monthly", 
+                "currency": "aud"
+            }
+            response = self.session.post(f"{self.base_url}/api/subscription/checkout", json=checkout_data)
+            success = response.status_code in [401, 403]
+            return self.log_test("POST /api/subscription/checkout (no auth)", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("POST /api/subscription/checkout (no auth)", False, str(e))
+
+    def test_pricing_structure(self):
+        """Test pricing API response structure"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/pricing")
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                
+                # Check tier structure
+                for tier_name in ['free', 'basic', 'premium']:
+                    tier_data = data.get('tiers', {}).get(tier_name, {})
+                    required_fields = ['name', 'monthly_price', 'annual_price']
+                    if not all(field in tier_data for field in required_fields):
+                        success = False
+                        break
+                
+                # Check features and limits
+                if success:
+                    success = 'features' in data and 'limits' in data
+            
+            return self.log_test("Pricing API structure", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Pricing API structure", False, str(e))
+
     def test_delete_post(self):
         """Test deleting a post (run last)"""
         if not self.test_post_id:
