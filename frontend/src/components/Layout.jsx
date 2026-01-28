@@ -24,11 +24,18 @@ export default function Layout() {
   const location = useLocation();
   const { user } = useUser();
   const { getToken } = useAuth();
+  const { effectiveTier } = useSubscription();
 
   // Set up token getter for API calls
   useEffect(() => {
     setTokenGetter(getToken);
   }, [getToken]);
+
+  const tierColors = {
+    free: 'bg-neutral-600 text-neutral-300',
+    basic: 'bg-electric-blue/20 text-electric-blue',
+    premium: 'bg-amber-500/20 text-amber-400',
+  };
 
   return (
     <div className="flex min-h-screen">
@@ -48,7 +55,7 @@ export default function Layout() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4">
+        <nav className="flex-1 p-4 overflow-y-auto">
           <ul className="space-y-2">
             {navItems.map(({ path, icon: Icon, label }) => {
               const isActive = path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
@@ -90,9 +97,17 @@ export default function Layout() {
               }}
             />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate" data-testid="user-name">
-                {user?.firstName || user?.primaryEmailAddress?.emailAddress?.split('@')[0] || 'User'}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium text-white truncate" data-testid="user-name">
+                  {user?.firstName || user?.primaryEmailAddress?.emailAddress?.split('@')[0] || 'User'}
+                </p>
+                <span className={cn(
+                  "text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded",
+                  tierColors[effectiveTier]
+                )} data-testid="user-tier-badge">
+                  {effectiveTier}
+                </span>
+              </div>
               <p className="text-xs text-neutral-500 truncate">
                 {user?.primaryEmailAddress?.emailAddress || ''}
               </p>
