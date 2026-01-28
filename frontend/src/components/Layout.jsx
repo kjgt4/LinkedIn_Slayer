@@ -1,10 +1,11 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, PenSquare, FolderOpen, Settings, Zap, Database, BarChart3, Mic, Users, MessageCircle } from 'lucide-react';
+import { LayoutDashboard, PenSquare, FolderOpen, Settings, Zap, Database, BarChart3, Mic, Users, MessageCircle, CreditCard } from 'lucide-react';
 import { UserButton, useUser } from '@clerk/clerk-react';
 import { cn } from '@/lib/utils';
 import { useEffect } from 'react';
 import { setTokenGetter } from '@/lib/api';
 import { useAuth } from '@clerk/clerk-react';
+import { useSubscription } from '@/hooks/useSubscription';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -15,6 +16,7 @@ const navItems = [
   { path: '/influencers', icon: Users, label: 'Influencers' },
   { path: '/engagement', icon: MessageCircle, label: 'Engage' },
   { path: '/analytics', icon: BarChart3, label: 'Analytics' },
+  { path: '/pricing', icon: CreditCard, label: 'Pricing' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
 
