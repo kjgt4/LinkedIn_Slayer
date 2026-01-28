@@ -151,6 +151,18 @@ export const linkedinAPI = {
   publish: (postId) => api.post(`/api/linkedin/publish/${postId}`),
 };
 
+// ============== Subscription API ==============
+export const subscriptionAPI = {
+  get: () => api.get('/api/subscription'),
+  getUsage: () => api.get('/api/subscription/usage'),
+  checkFeature: (featureName) => api.get(`/api/subscription/feature/${featureName}`),
+  createCheckout: (data) => api.post('/api/subscription/checkout', data),
+  getCheckoutStatus: (sessionId) => api.get(`/api/subscription/checkout/status/${sessionId}`),
+  cancel: () => api.post('/api/subscription/cancel'),
+  reactivate: () => api.post('/api/subscription/reactivate'),
+  getPricing: (currency = 'aud') => api.get('/api/pricing', { params: { currency } }),
+};
+
 // ============== Influencers API (Strategic Engagement Hub) ==============
 export const influencersAPI = {
   getAll: (params = {}) => api.get('/api/influencers', { params }),
