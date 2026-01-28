@@ -1598,6 +1598,10 @@ async def root():
 # Include the router in the main app
 app.include_router(api_router)
 
+# Include the engagement hub router
+engagement_router = create_engagement_router(db, get_llm_chat, get_user_settings)
+app.include_router(engagement_router)
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
