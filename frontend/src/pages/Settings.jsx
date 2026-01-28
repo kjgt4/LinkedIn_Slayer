@@ -501,7 +501,7 @@ export default function Settings() {
                       className="bg-black/30 border-white/10 font-mono text-sm"
                     />
                     <p className="text-xs text-neutral-500 mt-1">
-                      Add this URL to your LinkedIn App's Authorized Redirect URLs
+                      Add this URL to your LinkedIn App&apos;s Authorized Redirect URLs
                     </p>
                   </div>
 
