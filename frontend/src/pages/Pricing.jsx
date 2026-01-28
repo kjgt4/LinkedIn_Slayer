@@ -96,7 +96,7 @@ export default function Pricing() {
           </h1>
           <p className="text-neutral-400 text-lg max-w-2xl mx-auto">
             Build your LinkedIn authority with AI-powered content creation. 
-            Start free, upgrade when you're ready.
+            Start free, upgrade when you&apos;re ready.
           </p>
         </div>
 
