@@ -149,4 +149,69 @@ export const linkedinAPI = {
   publish: (postId) => api.post(`/api/linkedin/publish/${postId}`),
 };
 
+// ============== Backward Compatible Direct Exports ==============
+// These maintain compatibility with existing page imports
+
+// Posts
+export const getPosts = (status) => postsAPI.getAll(status);
+export const getPost = (id) => postsAPI.get(id);
+export const createPost = (data) => postsAPI.create(data);
+export const updatePost = (id, data) => postsAPI.update(id, data);
+export const deletePost = (id) => postsAPI.delete(id);
+export const schedulePost = (id, date, slot, time) => postsAPI.schedule(id, date, slot, time);
+export const publishPost = (id) => postsAPI.publish(id);
+export const unschedulePost = (id) => postsAPI.unschedule(id);
+
+// Settings
+export const getSettings = () => settingsAPI.get();
+export const updateSettings = (data) => settingsAPI.update(data);
+
+// Calendar
+export const getWeekCalendar = (weekOffset) => calendarAPI.getWeek(weekOffset);
+
+// Knowledge
+export const getKnowledgeItems = (sourceType) => knowledgeAPI.getAll(sourceType);
+export const getKnowledgeItem = (id) => knowledgeAPI.get(id);
+export const createKnowledgeItem = (data) => knowledgeAPI.create(data);
+export const updateKnowledgeItem = (id, data) => knowledgeAPI.update(id, data);
+export const deleteKnowledgeItem = (id) => knowledgeAPI.delete(id);
+export const uploadKnowledgeFile = (formData) => knowledgeAPI.uploadFile(formData);
+export const addKnowledgeFromUrl = (url, title, tags) => knowledgeAPI.addFromUrl(url, title, tags);
+export const extractGems = (id) => knowledgeAPI.extractGems(id);
+
+// Inspiration URLs
+export const getInspirationUrls = (favoritesOnly) => inspirationAPI.getAll(favoritesOnly);
+export const saveInspirationUrl = (url, title) => inspirationAPI.save(url, title);
+export const toggleFavoriteUrl = (id) => inspirationAPI.toggleFavorite(id);
+export const deleteInspirationUrl = (id) => inspirationAPI.delete(id);
+export const saveInspirationToVault = (id) => inspirationAPI.saveToVault(id);
+
+// Voice Profiles
+export const getVoiceProfiles = () => voiceProfilesAPI.getAll();
+export const getActiveVoiceProfile = () => voiceProfilesAPI.getActive();
+export const getVoiceProfile = (id) => voiceProfilesAPI.get(id);
+export const createVoiceProfile = (data) => voiceProfilesAPI.create(data);
+export const updateVoiceProfile = (id, data) => voiceProfilesAPI.update(id, data);
+export const deleteVoiceProfile = (id) => voiceProfilesAPI.delete(id);
+export const activateVoiceProfile = (id) => voiceProfilesAPI.activate(id);
+export const analyzeWritingSamples = (samples) => voiceProfilesAPI.analyzeSamples(samples);
+
+// Analytics
+export const getPerformanceMetrics = () => analyticsAPI.getPerformance();
+export const getPillarRecommendation = () => analyticsAPI.getPillarRecommendation();
+
+// Engagement
+export const getActiveEngagement = () => engagementAPI.getActive();
+
+// AI
+export const generateContent = (data) => aiAPI.generateContent(data);
+export const suggestTopics = (context, inspirationUrl) => aiAPI.suggestTopics(context, inspirationUrl);
+export const improveHook = (hook) => aiAPI.improveHook(hook);
+export const validateHook = (hook) => aiAPI.validateHook(hook);
+
+// LinkedIn
+export const getLinkedInAuthUrl = () => linkedinAPI.getAuthUrl();
+export const disconnectLinkedIn = () => linkedinAPI.disconnect();
+export const publishToLinkedIn = (postId) => linkedinAPI.publish(postId);
+
 export default api;
