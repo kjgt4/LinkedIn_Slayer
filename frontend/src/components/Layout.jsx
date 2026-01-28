@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, PenSquare, FolderOpen, Settings, Zap, Database, BarChart3, Mic } from 'lucide-react';
+import { LayoutDashboard, PenSquare, FolderOpen, Settings, Zap, Database, BarChart3, Mic, Users, MessageCircle } from 'lucide-react';
 import { UserButton, useUser } from '@clerk/clerk-react';
 import { cn } from '@/lib/utils';
 import { useEffect } from 'react';
@@ -12,6 +12,8 @@ const navItems = [
   { path: '/library', icon: FolderOpen, label: 'Library' },
   { path: '/vault', icon: Database, label: 'Vault' },
   { path: '/voice', icon: Mic, label: 'Voice' },
+  { path: '/influencers', icon: Users, label: 'Influencers' },
+  { path: '/engagement', icon: MessageCircle, label: 'Engage' },
   { path: '/analytics', icon: BarChart3, label: 'Analytics' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
