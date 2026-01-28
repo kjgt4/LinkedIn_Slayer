@@ -109,6 +109,10 @@ class UserSettings(BaseModel):
     linkedin_client_id: Optional[str] = None
     linkedin_client_secret: Optional[str] = None
     linkedin_redirect_uri: Optional[str] = None
+    # Subscription data
+    subscription: dict = Field(default_factory=get_default_subscription)
+    # Usage tracking data
+    usage: dict = Field(default_factory=get_default_usage)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
