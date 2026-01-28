@@ -845,6 +845,14 @@ class LinkedInAuthorityEngineAPITester:
         self.test_get_settings()
         self.test_update_settings()
 
+        # Subscription System Tests (NEW)
+        print("\n💳 Testing Subscription System endpoints...")
+        self.test_get_pricing_default()
+        self.test_get_pricing_currencies()
+        self.test_subscription_endpoints_no_auth()
+        self.test_checkout_endpoint_no_auth()
+        self.test_pricing_structure()
+
         # Post CRUD tests
         self.test_create_post()
         self.test_get_posts()
