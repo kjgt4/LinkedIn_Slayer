@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, Depends, Request
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -16,6 +16,35 @@ import aiofiles
 import httpx
 from auth import OptionalUserId, RequiredUserId, ClerkAuthError
 from engagement_hub import create_engagement_router
+from subscription import (
+    get_default_subscription,
+    get_default_usage,
+    get_usage_limit,
+    has_feature_access,
+    get_effective_tier,
+    is_in_grace_period,
+    get_grace_period_hours_remaining,
+    should_reset_monthly_usage,
+    get_reset_usage_data,
+    get_pricing_for_currency,
+    get_price_amount,
+    USAGE_LIMITS,
+    FEATURE_ACCESS,
+    CURRENCY_CONFIG,
+    DEFAULT_CURRENCY,
+    CheckoutRequest,
+    SubscriptionResponse,
+    UsageResponse,
+)
+from stripe_service import (
+    SubscriptionStripeService,
+    get_subscription_update_from_checkout,
+    get_subscription_cancellation_update,
+    get_subscription_reactivation_update,
+    get_payment_failed_update,
+    get_payment_succeeded_update,
+    get_subscription_expired_update,
+)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
