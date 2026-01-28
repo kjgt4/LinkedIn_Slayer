@@ -42,7 +42,6 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized - could redirect to login
       console.error('Unauthorized request - please sign in');
     }
     return Promise.reject(error);
@@ -124,6 +123,7 @@ export const voiceProfilesAPI = {
 export const analyticsAPI = {
   getPerformance: () => api.get('/api/analytics/performance'),
   getPillarRecommendation: () => api.get('/api/analytics/pillar-recommendation'),
+  getEngagement: () => api.get('/api/analytics/engagement'),
 };
 
 // ============== Engagement API ==============
@@ -140,6 +140,8 @@ export const aiAPI = {
     }),
   improveHook: (hook) => api.post('/api/ai/improve-hook', { hook }),
   validateHook: (hook) => api.post('/api/validate-hook', { hook }),
+  draftEngagementComment: (data) => api.post('/api/ai/draft-engagement-comment', data),
+  suggestInfluencerSearch: (data) => api.post('/api/ai/suggest-influencer-search', data),
 };
 
 // ============== LinkedIn API ==============
@@ -147,6 +149,27 @@ export const linkedinAPI = {
   getAuthUrl: () => api.get('/api/linkedin/auth'),
   disconnect: () => api.post('/api/linkedin/disconnect'),
   publish: (postId) => api.post(`/api/linkedin/publish/${postId}`),
+};
+
+// ============== Influencers API (Strategic Engagement Hub) ==============
+export const influencersAPI = {
+  getAll: (params = {}) => api.get('/api/influencers', { params }),
+  get: (id) => api.get(`/api/influencers/${id}`),
+  create: (data) => api.post('/api/influencers', data),
+  update: (id, data) => api.put(`/api/influencers/${id}`, data),
+  delete: (id) => api.delete(`/api/influencers/${id}`),
+};
+
+// ============== Tracked Posts API (Strategic Engagement Hub) ==============
+export const trackedPostsAPI = {
+  getAll: (params = {}) => api.get('/api/tracked-posts', { params }),
+  getQueue: () => api.get('/api/tracked-posts/queue'),
+  get: (id) => api.get(`/api/tracked-posts/${id}`),
+  create: (data) => api.post('/api/tracked-posts', data),
+  update: (id, data) => api.put(`/api/tracked-posts/${id}`, data),
+  delete: (id) => api.delete(`/api/tracked-posts/${id}`),
+  markEngaged: (id, engagementType) => 
+    api.post(`/api/tracked-posts/${id}/mark-engaged`, { engagement_type: engagementType }),
 };
 
 // ============== Backward Compatible Direct Exports ==============
