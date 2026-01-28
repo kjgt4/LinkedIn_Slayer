@@ -1,159 +1,97 @@
 # LinkedIn Authority Engine - Product Requirements Document
 
 ## Original Problem Statement
-Build a web app based on the LinkedIn Authority Engine PRD - an AI-powered content creation platform for LinkedIn professionals. The app helps create high-quality, authority-building LinkedIn content using SLAY and PAS frameworks.
+Build a LinkedIn Authority Engine - an agentic AI-powered content creation platform to help professionals create high-quality, authority-building LinkedIn content that drives B2B leads and professional growth.
+
+## Architecture
+- **Frontend:** React 19 (CRA) with Tailwind CSS, shadcn/ui components
+- **Backend:** FastAPI (Python) with async/await
+- **Database:** MongoDB with Motor async driver
+- **Authentication:** Clerk (React SDK + JWT verification)
+- **AI Integration:** Claude Sonnet 4.5 via Emergent Universal Key
 
 ## User Personas
-- **B2B Professionals**: Entrepreneurs, consultants, thought leaders building LinkedIn presence
-- **Content Creators**: Marketers seeking consistent, high-quality LinkedIn posts
-- **Business Owners**: Using LinkedIn for lead generation and brand building
+1. **Content Creators** - Professionals building personal brands on LinkedIn
+2. **B2B Marketers** - Teams creating authority content for lead generation
+3. **Consultants/Coaches** - Experts monetizing their expertise through content
 
-## Core Requirements
-1. **AI Content Generation**: Claude Sonnet 4.5 (default) with multi-provider support (OpenAI, Gemini)
-2. **SLAY Framework**: Story → Lesson → Advice → You (narrative posts)
-3. **PAS Framework**: Problem → Agitate → Solution (problem-solving posts)
-4. **Hook Validator**: 8-word rule enforcement with real-time validation
-5. **Content Calendar**: 4-3-2-1 strategy (4 posts/week, 3 pillars, 2 frameworks, 1 CTA)
-6. **Mobile Preview**: Real-time LinkedIn post preview
+## Core Requirements (Static)
+1. SLAY & PAS content frameworks
+2. 4-3-2-1 content calendar strategy
+3. Voice profile engine for authentic content
+4. Knowledge vault for expertise mining
+5. Hook validation (8-word rule)
+6. Mobile preview for LinkedIn rendering
+7. Performance analytics
+8. LinkedIn publishing integration
+9. Strategic Engagement Hub for influencer tracking
 
 ## What's Been Implemented
 
-### Phase 1 - MVP (January 26, 2026)
-- ✅ User Settings with AI provider/model configuration
-- ✅ Posts CRUD with framework sections, pillars
-- ✅ Calendar week view with pillar balance tracking
-- ✅ AI content generation (Claude/OpenAI/Gemini via Emergent Key)
-- ✅ Topic suggestions with Knowledge Vault integration
-- ✅ Hook validator with 8-word rule, score 0-100
-- ✅ Mobile phone mockup preview
-- ✅ Copy-to-clipboard publishing
-- ✅ Dark obsidian theme with professional UI
+### January 28, 2025 - Strategic Engagement Hub
+- ✅ Influencer Roster page (`/influencers`) with CRUD operations
+- ✅ Card grid with filtering by priority, status, themes
+- ✅ Add/Edit Influencer dialog with all fields
+- ✅ Discovery Assistant with AI-generated search strategies
+- ✅ Engagement Queue page (`/engagement`)
+- ✅ Post tracking with status management (new, draft_ready, engaged, skipped)
+- ✅ AI Comment Drafting with 3 variations (experience, insight, question)
+- ✅ Engagement goal selection (visibility, relationship, thought_leadership)
+- ✅ Copy to clipboard + open LinkedIn integration
+- ✅ Mark Engaged functionality with engagement type tracking
+- ✅ Engagement Analytics endpoint with metrics
+- ✅ Backend routes in `engagement_hub.py` with full auth
 
-### Phase 2 - Enhanced Features (January 26, 2026)
-- ✅ **Post Scheduling**: Schedule posts to calendar slots (Morning/Midday/Afternoon/Evening)
-- ✅ **30-Minute Engagement Timer**: Browser notifications when posts need engagement
-- ✅ **Knowledge Vault**: Store expertise for AI-powered content
-  - Text notes, SOPs, transcripts
-  - URL content import
-  - PDF/file uploads
-  - AI gem extraction (identifies monetizable expertise)
-  - Tag organization
-- ✅ **Performance Analytics Dashboard**
-  - Total posts and published count
-  - Pillar performance (Growth/TAM/Sales with engagement metrics)
-  - Framework performance (SLAY/PAS comparison)
-  - Weekly engagement trend chart
-  - AI Strategy Recommendations
-  - Top performing posts ranking
+### January 28, 2025 - Clerk Authentication & Multi-User Workspace
+- ✅ Clerk React SDK integration (@clerk/clerk-react)
+- ✅ JWT token verification in FastAPI backend
+- ✅ Multi-user workspace isolation (all data filtered by user_id)
+- ✅ Protected routes with SignedIn/SignedOut components
+- ✅ User sync endpoint (/api/auth/sync)
+- ✅ Social login support (Google, LinkedIn, GitHub)
+- ✅ UserButton component in sidebar
+- ✅ AuthContext for token management
 
-### Phase 3 - LinkedIn Integration & Voice Engine (January 26, 2026)
-- ✅ **LinkedIn API Integration**
-  - OAuth2 authentication flow
-  - 1-click publish directly to LinkedIn
-  - LinkedIn connection status in Settings
-  - Publish to LinkedIn button in Editor
-  - Tracks LinkedIn post ID and URL
-  - *Note: Requires LinkedIn API credentials (LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, LINKEDIN_REDIRECT_URI)*
-
-- ✅ **Voice Profile Engine**
-  - Create custom voice profiles
-  - Define tone (professional/casual/authoritative/friendly/inspirational)
-  - Vocabulary style (business/technical/conversational/academic/creative)
-  - Sentence structure preferences
-  - Personality traits
-  - Signature expressions
-  - Preferred/avoid phrases
-  - Industry context and target audience
-  - **AI Writing Analysis**: Paste 2-3 sample posts and AI extracts your unique voice
-  - Active voice profile automatically applied to AI content generation
-
-## Technical Architecture
-- **Frontend**: React 19, Tailwind CSS, shadcn/ui, React Router
-- **Backend**: FastAPI, Motor (async MongoDB), emergentintegrations
-- **Database**: MongoDB
-- **AI**: Claude Sonnet 4.5 via Emergent Universal Key
-
-## API Endpoints (v3.0.0)
-
-### Content
-- `POST /api/posts` - Create post
-- `GET /api/posts` - List posts
-- `PUT /api/posts/{id}` - Update post
-- `DELETE /api/posts/{id}` - Delete post
-- `POST /api/posts/{id}/schedule` - Schedule post
-- `POST /api/posts/{id}/publish` - Publish post (starts engagement timer)
-- `POST /api/posts/{id}/unschedule` - Remove scheduling
-
-### Knowledge Vault
-- `GET /api/knowledge` - List knowledge items
-- `POST /api/knowledge` - Create item
-- `POST /api/knowledge/upload` - Upload file
-- `POST /api/knowledge/url` - Import from URL
-- `POST /api/knowledge/{id}/extract-gems` - AI gem extraction
-
-### Analytics
-- `GET /api/analytics/performance` - Get performance metrics
-- `GET /api/analytics/pillar-recommendation` - Get AI strategy recommendation
-
-### Voice Profiles
-- `GET /api/voice-profiles` - List profiles
-- `GET /api/voice-profiles/active` - Get active profile
-- `POST /api/voice-profiles` - Create profile
-- `PUT /api/voice-profiles/{id}` - Update profile
-- `DELETE /api/voice-profiles/{id}` - Delete profile
-- `POST /api/voice-profiles/{id}/activate` - Set as active
-- `POST /api/voice-profiles/analyze-samples` - AI analyzes writing samples
-
-### LinkedIn Integration
-- `GET /api/linkedin/auth` - Get OAuth authorization URL
-- `GET /api/linkedin/callback` - Handle OAuth callback
-- `POST /api/linkedin/disconnect` - Disconnect account
-- `POST /api/linkedin/publish/{post_id}` - Publish to LinkedIn
-
-### AI
-- `POST /api/ai/generate-content` - Generate post content (uses active voice profile)
-- `POST /api/ai/suggest-topics` - Get topic suggestions
-- `POST /api/ai/improve-hook` - Improve hook with AI
-
-## LinkedIn API Setup Required
-To enable LinkedIn publishing, add these to `/app/backend/.env`:
-```
-LINKEDIN_CLIENT_ID=your_client_id
-LINKEDIN_CLIENT_SECRET=your_client_secret
-LINKEDIN_REDIRECT_URI=https://your-domain.com/api/linkedin/callback
-FRONTEND_URL=https://your-domain.com
-```
-
-Get credentials from: https://www.linkedin.com/developers/apps
+### Previously Implemented (MVP)
+- ✅ Dashboard with weekly calendar
+- ✅ Content editor with SLAY/PAS frameworks
+- ✅ Hook validator with 8-word rule
+- ✅ Mobile preview component
+- ✅ Knowledge vault with file upload
+- ✅ Voice profile engine with AI analysis
+- ✅ Topic suggestions with inspiration URLs
+- ✅ Performance analytics dashboard
+- ✅ LinkedIn OAuth integration
+- ✅ Engagement timer (30-min window)
+- ✅ AI content generation
 
 ## Prioritized Backlog
 
-### P0 (Critical) - COMPLETED
-- All MVP features ✅
-- Post scheduling ✅
-- Engagement timer ✅
-- Knowledge Vault ✅
-- Analytics dashboard ✅
-- LinkedIn API integration ✅
-- Voice Profile Engine ✅
+### P0 - Critical (Next)
+- [ ] Engagement Reminders & Notifications system
+- [ ] Browser notifications for engagement reminders
+- [ ] Engagement streaks tracking
 
-### P1 (High Priority - Future)
-- Multiple user accounts/workspaces
-- Team collaboration features
-- LinkedIn analytics sync
+### P1 - High Priority
+- [ ] Team/organization workspace sharing
+- [ ] Role-based access control (admin, editor, viewer)
+- [ ] LinkedIn post analytics sync
+- [ ] Content calendar drag-and-drop
 
-### P2 (Medium Priority)
-- Strategic Arbitrage (trend monitoring)
-- Authority jacking suggestions
-- Hook library with historical performance
-
-### P3 (Future)
-- AI-suggested comment replies
-- A/B testing for hooks
-- Chrome extension for LinkedIn
+### P2 - Medium Priority
+- [ ] Bulk import influencers (CSV)
+- [ ] A/B hook testing
+- [ ] Competitor content analysis
+- [ ] Browser extension for post capture
 
 ## Next Tasks
-1. Configure LinkedIn API credentials for production use
-2. Add LinkedIn analytics sync to pull engagement metrics
-3. Implement multi-user/workspace support
-4. Mobile app companion
+1. Test full engagement flow with real influencers and posts
+2. Implement engagement reminders and notifications
+3. Add engagement heatmap visualization to analytics
+4. Team/organization features (Phase 2)
+
+## Environment Variables Required
+- `REACT_APP_CLERK_PUBLISHABLE_KEY` - Clerk frontend key
+- `CLERK_SECRET_KEY` - Clerk backend key
+- `EMERGENT_LLM_KEY` - AI integration key
+- `MONGO_URL` - MongoDB connection string
