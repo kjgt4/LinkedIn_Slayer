@@ -9,6 +9,8 @@ import Library from "@/pages/Library";
 import KnowledgeVault from "@/pages/KnowledgeVault";
 import Analytics from "@/pages/Analytics";
 import VoiceProfile from "@/pages/VoiceProfile";
+import InfluencerRoster from "@/pages/InfluencerRoster";
+import EngagementQueue from "@/pages/EngagementQueue";
 import Layout from "@/components/Layout";
 import EngagementTimer from "@/components/EngagementTimer";
 import AuthPage from "@/pages/AuthPage";
@@ -52,6 +54,8 @@ function App() {
               <Route path="vault" element={<KnowledgeVault />} />
               <Route path="voice" element={<VoiceProfile />} />
               <Route path="analytics" element={<Analytics />} />
+              <Route path="influencers" element={<InfluencerRoster />} />
+              <Route path="engagement" element={<EngagementQueue />} />
               <Route path="settings" element={<Settings />} />
             </Route>
             
