@@ -37,7 +37,7 @@ function App() {
             {/* Public auth routes */}
             <Route path="/sign-in/*" element={<AuthPage mode="sign-in" />} />
             <Route path="/sign-up/*" element={<AuthPage mode="sign-up" />} />
-            
+
             {/* Protected routes */}
             <Route
               path="/"
@@ -58,7 +58,7 @@ function App() {
               <Route path="engagement" element={<EngagementQueue />} />
               <Route path="settings" element={<Settings />} />
             </Route>
-            
+
             {/* Catch-all redirect */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
