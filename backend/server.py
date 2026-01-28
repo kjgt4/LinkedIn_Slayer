@@ -15,6 +15,7 @@ import re
 import aiofiles
 import httpx
 from auth import OptionalUserId, RequiredUserId, ClerkAuthError
+from engagement_hub import create_engagement_router
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
