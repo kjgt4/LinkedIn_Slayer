@@ -74,7 +74,7 @@ export default function Layout() {
         {/* User Profile Section */}
         <div className="p-4 border-t border-white/10">
           <div className="flex items-center gap-3">
-            <UserButton 
+            <UserButton
               afterSignOutUrl="/sign-in"
               appearance={{
                 elements: {

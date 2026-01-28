@@ -41,7 +41,7 @@ const PROVIDERS = [
 const MODELS = {
   anthropic: [
     { value: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5' },
-    { value: 'claude-4-sonnet-20250514', label: 'Claude 4 Sonnet' },
+    { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
     { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5' },
     { value: 'claude-opus-4-5-20251101', label: 'Claude Opus 4.5' },
   ],
@@ -79,7 +79,7 @@ export default function Settings() {
 
   useEffect(() => {
     fetchSettings();
-    
+
     // Check for LinkedIn callback
     if (searchParams.get('linkedin') === 'connected') {
       toast.success('LinkedIn connected successfully!');
@@ -274,16 +274,16 @@ export default function Settings() {
                     <p className="text-sm text-neutral-400">
                       Get your LinkedIn API credentials from the Developer Portal
                     </p>
-                    <a 
-                      href="https://www.linkedin.com/developers/apps" 
-                      target="_blank" 
+                    <a
+                      href="https://www.linkedin.com/developers/apps"
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-electric-blue hover:underline text-sm flex items-center gap-1"
                     >
                       Open Portal <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
-                  
+
                   <div>
                     <Label className="text-neutral-400 text-xs uppercase tracking-wider">Client ID</Label>
                     <Input
@@ -294,7 +294,7 @@ export default function Settings() {
                       className="bg-black/30 border-white/10 font-mono text-sm"
                     />
                   </div>
-                  
+
                   <div>
                     <Label className="text-neutral-400 text-xs uppercase tracking-wider">Client Secret</Label>
                     <Input
@@ -306,7 +306,7 @@ export default function Settings() {
                       className="bg-black/30 border-white/10 font-mono text-sm"
                     />
                   </div>
-                  
+
                   <div>
                     <Label className="text-neutral-400 text-xs uppercase tracking-wider">Redirect URI</Label>
                     <Input
@@ -336,8 +336,8 @@ export default function Settings() {
               data-testid="connect-linkedin-btn"
               className={cn(
                 "w-full text-white",
-                hasLinkedInCredentials 
-                  ? "bg-[#0077B5] hover:bg-[#006097]" 
+                hasLinkedInCredentials
+                  ? "bg-[#0077B5] hover:bg-[#006097]"
                   : "bg-neutral-700 cursor-not-allowed"
               )}
             >
@@ -431,7 +431,7 @@ export default function Settings() {
         {!settings.use_emergent_key && (
           <div className="space-y-2">
             <Label className="text-neutral-400 text-xs uppercase tracking-wider">
-              {settings.ai_provider === 'anthropic' ? 'Anthropic' : 
+              {settings.ai_provider === 'anthropic' ? 'Anthropic' :
                settings.ai_provider === 'openai' ? 'OpenAI' : 'Google'} API Key
             </Label>
             <Input
