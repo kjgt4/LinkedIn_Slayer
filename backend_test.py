@@ -109,7 +109,7 @@ class LinkedInAuthorityEngineAPITester:
         """Test getting a specific post by ID"""
         if not self.test_post_id:
             return self.log_test("Get Post by ID", False, "No test post ID available")
-        
+
         try:
             response = self.session.get(f"{self.base_url}/api/posts/{self.test_post_id}")
             success = response.status_code == 200
@@ -124,7 +124,7 @@ class LinkedInAuthorityEngineAPITester:
         """Test updating a post"""
         if not self.test_post_id:
             return self.log_test("Update Post", False, "No test post ID available")
-        
+
         try:
             update_data = {
                 "title": "Updated Test Post",
@@ -216,7 +216,7 @@ class LinkedInAuthorityEngineAPITester:
             return self.log_test("AI Improve Hook", False, str(e))
 
     # ============== Phase 3 Features Tests ==============
-    
+
     def test_get_voice_profiles(self):
         """Test getting all voice profiles"""
         try:
@@ -257,7 +257,7 @@ class LinkedInAuthorityEngineAPITester:
         """Test getting a specific voice profile by ID"""
         if not hasattr(self, 'test_voice_profile_id') or not self.test_voice_profile_id:
             return self.log_test("Get Voice Profile by ID", False, "No test voice profile ID available")
-        
+
         try:
             response = self.session.get(f"{self.base_url}/api/voice-profiles/{self.test_voice_profile_id}")
             success = response.status_code == 200
@@ -272,7 +272,7 @@ class LinkedInAuthorityEngineAPITester:
         """Test activating a voice profile"""
         if not hasattr(self, 'test_voice_profile_id') or not self.test_voice_profile_id:
             return self.log_test("Activate Voice Profile", False, "No test voice profile ID available")
-        
+
         try:
             response = self.session.post(f"{self.base_url}/api/voice-profiles/{self.test_voice_profile_id}/activate")
             success = response.status_code == 200
@@ -348,7 +348,7 @@ class LinkedInAuthorityEngineAPITester:
         """Test deleting a voice profile"""
         if not hasattr(self, 'test_voice_profile_id') or not self.test_voice_profile_id:
             return self.log_test("Delete Voice Profile", False, "No test voice profile ID available")
-        
+
         try:
             response = self.session.delete(f"{self.base_url}/api/voice-profiles/{self.test_voice_profile_id}")
             success = response.status_code == 200
@@ -360,19 +360,19 @@ class LinkedInAuthorityEngineAPITester:
             return self.log_test("Delete Voice Profile", False, str(e))
 
     # ============== Phase 2 Features Tests ==============
-    
+
     def test_schedule_post(self):
         """Test scheduling a post"""
         if not self.test_post_id:
             return self.log_test("Schedule Post", False, "No test post ID available")
-        
+
         try:
             schedule_data = {
                 "scheduled_date": "2025-01-15",
                 "scheduled_slot": 1,
                 "scheduled_time": "10:00"
             }
-            response = self.session.post(f"{self.base_url}/api/posts/{self.test_post_id}/schedule", 
+            response = self.session.post(f"{self.base_url}/api/posts/{self.test_post_id}/schedule",
                                        params=schedule_data)
             success = response.status_code == 200
             if success:
@@ -386,7 +386,7 @@ class LinkedInAuthorityEngineAPITester:
         """Test publishing a post"""
         if not self.test_post_id:
             return self.log_test("Publish Post", False, "No test post ID available")
-        
+
         try:
             response = self.session.post(f"{self.base_url}/api/posts/{self.test_post_id}/publish")
             success = response.status_code == 200
@@ -444,7 +444,7 @@ class LinkedInAuthorityEngineAPITester:
         """Test getting a specific knowledge item by ID"""
         if not hasattr(self, 'test_knowledge_id') or not self.test_knowledge_id:
             return self.log_test("Get Knowledge Item by ID", False, "No test knowledge ID available")
-        
+
         try:
             response = self.session.get(f"{self.base_url}/api/knowledge/{self.test_knowledge_id}")
             success = response.status_code == 200
@@ -476,7 +476,7 @@ class LinkedInAuthorityEngineAPITester:
         """Test extracting gems from knowledge item"""
         if not hasattr(self, 'test_knowledge_id') or not self.test_knowledge_id:
             return self.log_test("Extract Gems", False, "No test knowledge ID available")
-        
+
         try:
             response = self.session.post(f"{self.base_url}/api/knowledge/{self.test_knowledge_id}/extract-gems")
             success = response.status_code == 200
@@ -494,7 +494,7 @@ class LinkedInAuthorityEngineAPITester:
             success = response.status_code == 200
             if success:
                 data = response.json()
-                required_fields = ['total_posts', 'published_posts', 'avg_engagement', 
+                required_fields = ['total_posts', 'published_posts', 'avg_engagement',
                                  'pillar_performance', 'framework_performance']
                 success = all(field in data for field in required_fields)
             return self.log_test("Performance Metrics", success, f"Status: {response.status_code}")
@@ -518,7 +518,7 @@ class LinkedInAuthorityEngineAPITester:
         """Test deleting a knowledge item"""
         if not hasattr(self, 'test_knowledge_id') or not self.test_knowledge_id:
             return self.log_test("Delete Knowledge Item", False, "No test knowledge ID available")
-        
+
         try:
             response = self.session.delete(f"{self.base_url}/api/knowledge/{self.test_knowledge_id}")
             success = response.status_code == 200
@@ -530,7 +530,7 @@ class LinkedInAuthorityEngineAPITester:
             return self.log_test("Delete Knowledge Item", False, str(e))
 
     # ============== Strategic Engagement Hub Tests ==============
-    
+
     def test_get_influencers(self):
         """Test getting all influencers"""
         try:
@@ -594,7 +594,7 @@ class LinkedInAuthorityEngineAPITester:
         """Test creating a tracked post"""
         if not hasattr(self, 'test_influencer_id') or not self.test_influencer_id:
             return self.log_test("Create Tracked Post", False, "No test influencer ID available")
-        
+
         try:
             post_data = {
                 "influencer_id": self.test_influencer_id,
@@ -616,7 +616,7 @@ class LinkedInAuthorityEngineAPITester:
         """Test AI engagement comment drafting"""
         if not hasattr(self, 'test_influencer_id') or not self.test_influencer_id:
             return self.log_test("AI Draft Engagement Comment", False, "No test influencer ID available")
-        
+
         try:
             comment_data = {
                 "influencer_id": self.test_influencer_id,
@@ -669,10 +669,10 @@ class LinkedInAuthorityEngineAPITester:
         """Test marking a post as engaged"""
         if not hasattr(self, 'test_tracked_post_id') or not self.test_tracked_post_id:
             return self.log_test("Mark Post Engaged", False, "No test tracked post ID available")
-        
+
         try:
             engagement_data = {"engagement_type": "comment"}
-            response = self.session.post(f"{self.base_url}/api/tracked-posts/{self.test_tracked_post_id}/mark-engaged", 
+            response = self.session.post(f"{self.base_url}/api/tracked-posts/{self.test_tracked_post_id}/mark-engaged",
                                        json=engagement_data)
             success = response.status_code == 200
             if success:
@@ -686,7 +686,7 @@ class LinkedInAuthorityEngineAPITester:
         """Test deleting a tracked post"""
         if not hasattr(self, 'test_tracked_post_id') or not self.test_tracked_post_id:
             return self.log_test("Delete Tracked Post", False, "No test tracked post ID available")
-        
+
         try:
             response = self.session.delete(f"{self.base_url}/api/tracked-posts/{self.test_tracked_post_id}")
             success = response.status_code == 200
@@ -701,7 +701,7 @@ class LinkedInAuthorityEngineAPITester:
         """Test deleting an influencer"""
         if not hasattr(self, 'test_influencer_id') or not self.test_influencer_id:
             return self.log_test("Delete Influencer", False, "No test influencer ID available")
-        
+
         try:
             response = self.session.delete(f"{self.base_url}/api/influencers/{self.test_influencer_id}")
             success = response.status_code == 200
@@ -716,7 +716,7 @@ class LinkedInAuthorityEngineAPITester:
         """Test deleting a post (run last)"""
         if not self.test_post_id:
             return self.log_test("Delete Post", False, "No test post ID available")
-        
+
         try:
             response = self.session.delete(f"{self.base_url}/api/posts/{self.test_post_id}")
             success = response.status_code == 200
@@ -735,27 +735,27 @@ class LinkedInAuthorityEngineAPITester:
 
         # Basic API tests
         self.test_api_root()
-        
+
         # Settings tests
         self.test_get_settings()
         self.test_update_settings()
-        
+
         # Post CRUD tests
         self.test_create_post()
         self.test_get_posts()
         self.test_get_post_by_id()
         self.test_update_post()
-        
+
         # Utility endpoints
         self.test_validate_hook()
         self.test_calendar_week()
-        
+
         # AI endpoints (may take longer)
         print("\n🤖 Testing AI endpoints (may take a few seconds)...")
         self.test_ai_generate_content()
         self.test_ai_suggest_topics()
         self.test_ai_improve_hook()
-        
+
         # Phase 2 Features - Knowledge Vault
         print("\n📚 Testing Knowledge Vault endpoints...")
         self.test_create_knowledge_item()
@@ -763,18 +763,18 @@ class LinkedInAuthorityEngineAPITester:
         self.test_get_knowledge_item_by_id()
         self.test_add_knowledge_from_url()
         self.test_extract_gems()
-        
+
         # Phase 2 Features - Analytics
         print("\n📊 Testing Analytics endpoints...")
         self.test_performance_metrics()
         self.test_pillar_recommendation()
-        
+
         # Phase 2 Features - Scheduling & Publishing
         print("\n📅 Testing Scheduling & Publishing endpoints...")
         self.test_schedule_post()
         self.test_publish_post()
         self.test_engagement_active()
-        
+
         # Phase 3 Features - Voice Profiles
         print("\n🎤 Testing Voice Profile endpoints...")
         self.test_get_voice_profiles()
@@ -783,12 +783,12 @@ class LinkedInAuthorityEngineAPITester:
         self.test_activate_voice_profile()
         self.test_get_active_voice_profile()
         self.test_analyze_writing_samples()
-        
+
         # Phase 3 Features - LinkedIn Integration
         print("\n🔗 Testing LinkedIn Integration endpoints...")
         self.test_linkedin_auth_url()
         self.test_linkedin_disconnect()
-        
+
         # Strategic Engagement Hub Features
         print("\n🎯 Testing Strategic Engagement Hub endpoints...")
         self.test_get_influencers()
@@ -800,7 +800,7 @@ class LinkedInAuthorityEngineAPITester:
         self.test_ai_suggest_influencer_search()
         self.test_engagement_analytics()
         self.test_mark_post_engaged()
-        
+
         # Cleanup
         print("\n🧹 Cleaning up test data...")
         self.test_delete_knowledge_item()
@@ -808,11 +808,11 @@ class LinkedInAuthorityEngineAPITester:
         self.test_delete_tracked_post()
         self.test_delete_influencer()
         self.test_delete_post()
-        
+
         # Results
         print("\n" + "=" * 60)
         print(f"📊 Test Results: {self.tests_passed}/{self.tests_run} passed")
-        
+
         if self.tests_passed == self.tests_run:
             print("🎉 All tests passed!")
             return 0

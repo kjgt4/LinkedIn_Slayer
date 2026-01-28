@@ -67,13 +67,13 @@ export const postsAPI = {
   create: (data) => api.post('/api/posts', data),
   update: (id, data) => api.put(`/api/posts/${id}`, data),
   delete: (id) => api.delete(`/api/posts/${id}`),
-  schedule: (id, date, slot, time) => 
-    api.post(`/api/posts/${id}/schedule`, null, { 
-      params: { scheduled_date: date, scheduled_slot: slot, scheduled_time: time } 
+  schedule: (id, date, slot, time) =>
+    api.post(`/api/posts/${id}/schedule`, null, {
+      params: { scheduled_date: date, scheduled_slot: slot, scheduled_time: time }
     }),
   publish: (id) => api.post(`/api/posts/${id}/publish`),
   unschedule: (id) => api.post(`/api/posts/${id}/unschedule`),
-  updateEngagement: (id, metrics) => 
+  updateEngagement: (id, metrics) =>
     api.post(`/api/posts/${id}/engagement-metrics`, null, { params: metrics }),
 };
 
@@ -92,14 +92,14 @@ export const knowledgeAPI = {
   uploadFile: (formData) => api.post('/api/knowledge/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
-  addFromUrl: (url, title, tags = []) => 
+  addFromUrl: (url, title, tags = []) =>
     api.post('/api/knowledge/url', null, { params: { url, title, tags } }),
   extractGems: (id) => api.post(`/api/knowledge/${id}/extract-gems`),
 };
 
 // ============== Inspiration URLs API ==============
 export const inspirationAPI = {
-  getAll: (favoritesOnly = false) => 
+  getAll: (favoritesOnly = false) =>
     api.get('/api/inspiration-urls', { params: { favorites_only: favoritesOnly } }),
   save: (url, title) => api.post('/api/inspiration-urls', null, { params: { url, title } }),
   toggleFavorite: (id) => api.put(`/api/inspiration-urls/${id}/favorite`),
@@ -134,9 +134,9 @@ export const engagementAPI = {
 // ============== AI API ==============
 export const aiAPI = {
   generateContent: (data) => api.post('/api/ai/generate-content', data),
-  suggestTopics: (context, inspirationUrl) => 
-    api.post('/api/ai/suggest-topics', null, { 
-      params: { context, inspiration_url: inspirationUrl } 
+  suggestTopics: (context, inspirationUrl) =>
+    api.post('/api/ai/suggest-topics', null, {
+      params: { context, inspiration_url: inspirationUrl }
     }),
   improveHook: (hook) => api.post('/api/ai/improve-hook', { hook }),
   validateHook: (hook) => api.post('/api/validate-hook', { hook }),
@@ -168,7 +168,7 @@ export const trackedPostsAPI = {
   create: (data) => api.post('/api/tracked-posts', data),
   update: (id, data) => api.put(`/api/tracked-posts/${id}`, data),
   delete: (id) => api.delete(`/api/tracked-posts/${id}`),
-  markEngaged: (id, engagementType) => 
+  markEngaged: (id, engagementType) =>
     api.post(`/api/tracked-posts/${id}/mark-engaged`, { engagement_type: engagementType }),
 };
 
