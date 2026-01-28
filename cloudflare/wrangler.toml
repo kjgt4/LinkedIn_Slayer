@@ -1,0 +1,16 @@
+# Cloudflare Pages configuration
+# This is for reference - actual config is set in Cloudflare Dashboard
+
+name = "linkedin-authority-engine"
+compatibility_date = "2025-01-01"
+
+# Pages deployment configuration
+[pages]
+build_command = "cd frontend && yarn install && yarn build"
+build_output_directory = "frontend/build"
+
+# Environment variables for production
+# Set these in Cloudflare Dashboard > Pages > Settings > Environment Variables
+[vars]
+# REACT_APP_BACKEND_URL = "https://your-backend-api.com"
+# REACT_APP_CLERK_PUBLISHABLE_KEY = "pk_live_xxx"
