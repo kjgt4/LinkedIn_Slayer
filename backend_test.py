@@ -527,6 +527,189 @@ class LinkedInAuthorityEngineAPITester:
         except Exception as e:
             return self.log_test("Delete Knowledge Item", False, str(e))
 
+    # ============== Strategic Engagement Hub Tests ==============
+    
+    def test_get_influencers(self):
+        """Test getting all influencers"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/influencers")
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = isinstance(data, list)
+            return self.log_test("Get Influencers", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Get Influencers", False, str(e))
+
+    def test_create_influencer(self):
+        """Test creating a new influencer"""
+        try:
+            influencer_data = {
+                "name": "Test Influencer",
+                "linkedin_url": "https://linkedin.com/in/testinfluencer",
+                "headline": "Test LinkedIn Expert",
+                "follower_count": 10000,
+                "content_themes": ["growth", "leadership"],
+                "engagement_priority": "high",
+                "relationship_status": "discovered",
+                "notes": "Test influencer for API testing"
+            }
+            response = self.session.post(f"{self.base_url}/api/influencers", json=influencer_data)
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                self.test_influencer_id = data.get("id")
+                success = self.test_influencer_id is not None
+            return self.log_test("Create Influencer", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Create Influencer", False, str(e))
+
+    def test_get_tracked_posts(self):
+        """Test getting all tracked posts"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/tracked-posts")
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = isinstance(data, list)
+            return self.log_test("Get Tracked Posts", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Get Tracked Posts", False, str(e))
+
+    def test_get_engagement_queue(self):
+        """Test getting engagement queue"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/tracked-posts/queue")
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = isinstance(data, list)
+            return self.log_test("Get Engagement Queue", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Get Engagement Queue", False, str(e))
+
+    def test_create_tracked_post(self):
+        """Test creating a tracked post"""
+        if not hasattr(self, 'test_influencer_id') or not self.test_influencer_id:
+            return self.log_test("Create Tracked Post", False, "No test influencer ID available")
+        
+        try:
+            post_data = {
+                "influencer_id": self.test_influencer_id,
+                "linkedin_post_url": "https://linkedin.com/posts/test-post-123",
+                "post_content": "This is a test LinkedIn post content for tracking engagement opportunities.",
+                "post_date": "2025-01-15T10:00:00Z"
+            }
+            response = self.session.post(f"{self.base_url}/api/tracked-posts", json=post_data)
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                self.test_tracked_post_id = data.get("id")
+                success = self.test_tracked_post_id is not None
+            return self.log_test("Create Tracked Post", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Create Tracked Post", False, str(e))
+
+    def test_ai_draft_engagement_comment(self):
+        """Test AI engagement comment drafting"""
+        if not hasattr(self, 'test_influencer_id') or not self.test_influencer_id:
+            return self.log_test("AI Draft Engagement Comment", False, "No test influencer ID available")
+        
+        try:
+            comment_data = {
+                "influencer_id": self.test_influencer_id,
+                "post_content": "Great insights on LinkedIn growth strategies! The key is consistency and providing value.",
+                "post_url": "https://linkedin.com/posts/test-post-123",
+                "engagement_goal": "relationship"
+            }
+            response = self.session.post(f"{self.base_url}/api/ai/draft-engagement-comment", json=comment_data)
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = 'variations' in data and len(data['variations']) > 0
+            return self.log_test("AI Draft Engagement Comment", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("AI Draft Engagement Comment", False, str(e))
+
+    def test_ai_suggest_influencer_search(self):
+        """Test AI influencer search suggestions"""
+        try:
+            search_data = {
+                "user_content_pillars": ["Growth", "Leadership", "Sales"],
+                "user_industry": "B2B SaaS",
+                "user_target_audience": "CTOs and Tech Leaders",
+                "existing_themes": ["growth", "leadership"]
+            }
+            response = self.session.post(f"{self.base_url}/api/ai/suggest-influencer-search", json=search_data)
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                required_fields = ['search_strategies', 'suggested_niches', 'suggested_search_terms']
+                success = all(field in data for field in required_fields)
+            return self.log_test("AI Suggest Influencer Search", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("AI Suggest Influencer Search", False, str(e))
+
+    def test_engagement_analytics(self):
+        """Test engagement analytics"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/analytics/engagement")
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                required_fields = ['total_influencers', 'engagements_this_week', 'engagements_this_month']
+                success = all(field in data for field in required_fields)
+            return self.log_test("Engagement Analytics", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Engagement Analytics", False, str(e))
+
+    def test_mark_post_engaged(self):
+        """Test marking a post as engaged"""
+        if not hasattr(self, 'test_tracked_post_id') or not self.test_tracked_post_id:
+            return self.log_test("Mark Post Engaged", False, "No test tracked post ID available")
+        
+        try:
+            engagement_data = {"engagement_type": "comment"}
+            response = self.session.post(f"{self.base_url}/api/tracked-posts/{self.test_tracked_post_id}/mark-engaged", 
+                                       json=engagement_data)
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = data.get("status") == "engaged"
+            return self.log_test("Mark Post Engaged", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Mark Post Engaged", False, str(e))
+
+    def test_delete_tracked_post(self):
+        """Test deleting a tracked post"""
+        if not hasattr(self, 'test_tracked_post_id') or not self.test_tracked_post_id:
+            return self.log_test("Delete Tracked Post", False, "No test tracked post ID available")
+        
+        try:
+            response = self.session.delete(f"{self.base_url}/api/tracked-posts/{self.test_tracked_post_id}")
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = "deleted" in data.get("message", "").lower()
+            return self.log_test("Delete Tracked Post", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Delete Tracked Post", False, str(e))
+
+    def test_delete_influencer(self):
+        """Test deleting an influencer"""
+        if not hasattr(self, 'test_influencer_id') or not self.test_influencer_id:
+            return self.log_test("Delete Influencer", False, "No test influencer ID available")
+        
+        try:
+            response = self.session.delete(f"{self.base_url}/api/influencers/{self.test_influencer_id}")
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = "deleted" in data.get("message", "").lower()
+            return self.log_test("Delete Influencer", success, f"Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test("Delete Influencer", False, str(e))
+
     def test_delete_post(self):
         """Test deleting a post (run last)"""
         if not self.test_post_id:
