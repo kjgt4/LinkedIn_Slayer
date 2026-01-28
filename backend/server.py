@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, Depends, Request
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -16,6 +16,35 @@ import aiofiles
 import httpx
 from auth import OptionalUserId, RequiredUserId, ClerkAuthError
 from engagement_hub import create_engagement_router
+from subscription import (
+    get_default_subscription,
+    get_default_usage,
+    get_usage_limit,
+    has_feature_access,
+    get_effective_tier,
+    is_in_grace_period,
+    get_grace_period_hours_remaining,
+    should_reset_monthly_usage,
+    get_reset_usage_data,
+    get_pricing_for_currency,
+    get_price_amount,
+    USAGE_LIMITS,
+    FEATURE_ACCESS,
+    CURRENCY_CONFIG,
+    DEFAULT_CURRENCY,
+    CheckoutRequest,
+    SubscriptionResponse,
+    UsageResponse,
+)
+from stripe_service import (
+    SubscriptionStripeService,
+    get_subscription_update_from_checkout,
+    get_subscription_cancellation_update,
+    get_subscription_reactivation_update,
+    get_payment_failed_update,
+    get_payment_succeeded_update,
+    get_subscription_expired_update,
+)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -80,6 +109,10 @@ class UserSettings(BaseModel):
     linkedin_client_id: Optional[str] = None
     linkedin_client_secret: Optional[str] = None
     linkedin_redirect_uri: Optional[str] = None
+    # Subscription data
+    subscription: dict = Field(default_factory=get_default_subscription)
+    # Usage tracking data
+    usage: dict = Field(default_factory=get_default_usage)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -1588,6 +1621,411 @@ Provide a JSON response with:
     except Exception as e:
         logger.error(f"Voice analysis error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Voice analysis failed: {str(e)}")
+
+# ============== Subscription Routes ==============
+
+@api_router.get("/subscription")
+async def get_subscription(user_id: RequiredUserId):
+    """Get current subscription status"""
+    settings = await get_user_settings(user_id)
+    subscription = settings.subscription if hasattr(settings, 'subscription') else get_default_subscription()
+    
+    effective_tier = get_effective_tier(subscription)
+    in_grace = is_in_grace_period(subscription)
+    grace_hours = get_grace_period_hours_remaining(subscription)
+    
+    return SubscriptionResponse(
+        tier=subscription.get("tier", "free"),
+        status=subscription.get("status", "active"),
+        effective_tier=effective_tier,
+        billing_cycle=subscription.get("billing_cycle"),
+        currency=subscription.get("currency", DEFAULT_CURRENCY),
+        current_period_end=subscription.get("current_period_end"),
+        cancel_at_period_end=subscription.get("cancel_at_period_end", False),
+        is_in_grace_period=in_grace,
+        grace_period_hours_remaining=grace_hours,
+        payment_method_last4=subscription.get("payment_method_last4"),
+        payment_method_brand=subscription.get("payment_method_brand"),
+    )
+
+@api_router.get("/subscription/usage")
+async def get_usage(user_id: RequiredUserId):
+    """Get current usage against limits"""
+    settings = await get_user_settings(user_id)
+    subscription = settings.subscription if hasattr(settings, 'subscription') else get_default_subscription()
+    usage = settings.usage if hasattr(settings, 'usage') else get_default_usage()
+    
+    effective_tier = get_effective_tier(subscription)
+    limits = USAGE_LIMITS.get(effective_tier, USAGE_LIMITS["free"])
+    
+    # Check if usage needs reset
+    if should_reset_monthly_usage(usage):
+        reset_data = get_reset_usage_data()
+        # Preserve lifetime stats
+        reset_data["lifetime_posts"] = usage.get("lifetime_posts", 0)
+        reset_data["lifetime_ai_generations"] = usage.get("lifetime_ai_generations", 0)
+        await db.user_settings.update_one(
+            {"user_id": user_id},
+            {"$set": {"usage": reset_data, "updated_at": serialize_datetime(datetime.now(timezone.utc))}}
+        )
+        usage = reset_data
+    
+    # Get current resource counts
+    knowledge_count = await db.knowledge_vault.count_documents({"user_id": user_id})
+    voice_profile_count = await db.voice_profiles.count_documents({"user_id": user_id})
+    influencer_count = await db.influencers.count_documents({"user_id": user_id})
+    tracked_post_count = await db.tracked_posts.count_documents({"user_id": user_id})
+    
+    # Calculate days until reset
+    period_end = usage.get("period_end")
+    days_until_reset = 30
+    if period_end:
+        try:
+            end_date = datetime.fromisoformat(period_end.replace('Z', '+00:00'))
+            days_until_reset = max(0, (end_date - datetime.now(timezone.utc)).days)
+        except (ValueError, TypeError):
+            pass
+    
+    return UsageResponse(
+        posts_created=usage.get("posts_created", 0),
+        posts_limit=limits.get("posts_per_month", 5),
+        ai_generations=usage.get("ai_generations", 0),
+        ai_generations_limit=limits.get("ai_generations_per_month", 3),
+        ai_hook_improvements=usage.get("ai_hook_improvements", 0),
+        ai_hook_improvements_limit=limits.get("ai_hook_improvements_per_month", 3),
+        knowledge_items=knowledge_count,
+        knowledge_items_limit=limits.get("knowledge_items", 10),
+        voice_profiles=voice_profile_count,
+        voice_profiles_limit=limits.get("voice_profiles", 1),
+        tracked_influencers=influencer_count,
+        tracked_influencers_limit=limits.get("tracked_influencers", 3),
+        tracked_posts=tracked_post_count,
+        tracked_posts_limit=limits.get("tracked_posts", 5),
+        comment_drafts=usage.get("comment_drafts", 0),
+        comment_drafts_limit=limits.get("comment_drafts_per_month", 0),
+        period_resets_in_days=days_until_reset,
+        tier=effective_tier
+    )
+
+@api_router.get("/subscription/feature/{feature_name}")
+async def check_feature_access(feature_name: str, user_id: RequiredUserId):
+    """Check if user has access to a specific feature"""
+    settings = await get_user_settings(user_id)
+    subscription = settings.subscription if hasattr(settings, 'subscription') else get_default_subscription()
+    effective_tier = get_effective_tier(subscription)
+    
+    has_access = has_feature_access(effective_tier, feature_name)
+    
+    return {
+        "feature": feature_name,
+        "has_access": has_access,
+        "tier": effective_tier,
+        "required_tier": "basic" if feature_name in FEATURE_ACCESS.get("basic", {}) and FEATURE_ACCESS["basic"].get(feature_name) else "premium"
+    }
+
+@api_router.post("/subscription/checkout")
+async def create_checkout(request: CheckoutRequest, http_request: Request, user_id: RequiredUserId):
+    """Create Stripe checkout session for subscription"""
+    stripe_api_key = os.environ.get("STRIPE_API_KEY")
+    if not stripe_api_key:
+        raise HTTPException(status_code=500, detail="Stripe API key not configured")
+    
+    # Get user info for metadata
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "email": 1})
+    user_email = user.get("email") if user else None
+    
+    # Build URLs from request origin
+    origin = str(http_request.base_url).rstrip('/')
+    frontend_url = os.environ.get("FRONTEND_URL", origin.replace(":8001", ":3000"))
+    success_url = f"{frontend_url}/settings?subscription=success&session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{frontend_url}/pricing?cancelled=true"
+    webhook_url = f"{origin}/api/webhook/stripe"
+    
+    # Initialize Stripe service
+    stripe_service = SubscriptionStripeService(api_key=stripe_api_key, webhook_url=webhook_url)
+    
+    try:
+        session = await stripe_service.create_checkout_session(
+            tier=request.tier,
+            billing_cycle=request.billing_cycle,
+            currency=request.currency,
+            success_url=success_url,
+            cancel_url=cancel_url,
+            user_id=user_id,
+            customer_email=user_email
+        )
+        
+        # Store pending transaction
+        transaction = {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "session_id": session.session_id,
+            "tier": request.tier,
+            "billing_cycle": request.billing_cycle,
+            "currency": request.currency,
+            "amount": get_price_amount(request.tier, request.billing_cycle, request.currency),
+            "status": "pending",
+            "created_at": serialize_datetime(datetime.now(timezone.utc))
+        }
+        await db.payment_transactions.insert_one(transaction)
+        
+        return {"checkout_url": session.url, "session_id": session.session_id}
+    except Exception as e:
+        logger.error(f"Checkout creation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/subscription/checkout/status/{session_id}")
+async def get_checkout_status(session_id: str, user_id: RequiredUserId):
+    """Get status of checkout session and update subscription if successful"""
+    stripe_api_key = os.environ.get("STRIPE_API_KEY")
+    if not stripe_api_key:
+        raise HTTPException(status_code=500, detail="Stripe API key not configured")
+    
+    stripe_service = SubscriptionStripeService(api_key=stripe_api_key, webhook_url="")
+    
+    try:
+        status = await stripe_service.get_checkout_status(session_id)
+        
+        # Check if we already processed this session
+        transaction = await db.payment_transactions.find_one(
+            {"session_id": session_id, "user_id": user_id},
+            {"_id": 0}
+        )
+        
+        if status.payment_status == "paid":
+            # Only process if not already completed
+            if transaction and transaction.get("status") != "completed":
+                metadata = status.metadata
+                
+                # Update subscription
+                update_data = get_subscription_update_from_checkout(status, metadata)
+                await db.user_settings.update_one(
+                    {"user_id": user_id},
+                    {"$set": {**update_data, "updated_at": serialize_datetime(datetime.now(timezone.utc))}}
+                )
+                
+                # Update transaction status
+                await db.payment_transactions.update_one(
+                    {"session_id": session_id},
+                    {"$set": {"status": "completed", "completed_at": serialize_datetime(datetime.now(timezone.utc))}}
+                )
+                
+                # Reset usage for new subscription
+                reset_data = get_reset_usage_data()
+                await db.user_settings.update_one(
+                    {"user_id": user_id},
+                    {"$set": {"usage": reset_data}}
+                )
+        
+        return {
+            "status": status.status,
+            "payment_status": status.payment_status,
+            "tier": status.metadata.get("tier"),
+            "billing_cycle": status.metadata.get("billing_cycle"),
+        }
+    except Exception as e:
+        logger.error(f"Failed to get checkout status: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/subscription/cancel")
+async def cancel_subscription(user_id: RequiredUserId):
+    """Cancel subscription at period end"""
+    stripe_api_key = os.environ.get("STRIPE_API_KEY")
+    if not stripe_api_key:
+        raise HTTPException(status_code=500, detail="Stripe API key not configured")
+
+    settings = await get_user_settings(user_id)
+    subscription = settings.subscription if hasattr(settings, 'subscription') else get_default_subscription()
+
+    if subscription.get("tier") == "free":
+        raise HTTPException(status_code=400, detail="No active subscription to cancel")
+
+    # Get Stripe subscription ID to cancel via Stripe API
+    stripe_subscription_id = subscription.get("stripe_subscription_id")
+    if stripe_subscription_id:
+        stripe_service = SubscriptionStripeService(api_key=stripe_api_key, webhook_url="")
+        await stripe_service.cancel_subscription(stripe_subscription_id)
+
+    update_data = get_subscription_cancellation_update()
+    await db.user_settings.update_one(
+        {"user_id": user_id},
+        {"$set": {**update_data, "updated_at": serialize_datetime(datetime.now(timezone.utc))}}
+    )
+
+    return {"message": "Subscription will be cancelled at the end of the billing period"}
+
+@api_router.post("/subscription/reactivate")
+async def reactivate_subscription(user_id: RequiredUserId):
+    """Reactivate a cancelled subscription"""
+    stripe_api_key = os.environ.get("STRIPE_API_KEY")
+    if not stripe_api_key:
+        raise HTTPException(status_code=500, detail="Stripe API key not configured")
+
+    settings = await get_user_settings(user_id)
+    subscription = settings.subscription if hasattr(settings, 'subscription') else get_default_subscription()
+
+    if not subscription.get("cancel_at_period_end"):
+        raise HTTPException(status_code=400, detail="No cancellation to revert")
+
+    # Get Stripe subscription ID to reactivate via Stripe API
+    stripe_subscription_id = subscription.get("stripe_subscription_id")
+    if stripe_subscription_id:
+        stripe_service = SubscriptionStripeService(api_key=stripe_api_key, webhook_url="")
+        await stripe_service.reactivate_subscription(stripe_subscription_id)
+
+    update_data = get_subscription_reactivation_update()
+    await db.user_settings.update_one(
+        {"user_id": user_id},
+        {"$set": {**update_data, "updated_at": serialize_datetime(datetime.now(timezone.utc))}}
+    )
+
+    return {"message": "Subscription reactivated"}
+
+@api_router.get("/pricing")
+async def get_pricing(currency: str = "aud"):
+    """Get pricing information for all tiers (public endpoint)"""
+    if currency not in CURRENCY_CONFIG:
+        currency = DEFAULT_CURRENCY
+    
+    return get_pricing_for_currency(currency)
+
+# ============== Stripe Webhook ==============
+
+@app.post("/api/webhook/stripe")
+async def stripe_webhook(request: Request):
+    """Handle Stripe webhook events"""
+    stripe_api_key = os.environ.get("STRIPE_API_KEY")
+    if not stripe_api_key:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+    
+    body = await request.body()
+    signature = request.headers.get("Stripe-Signature", "")
+    
+    webhook_url = f"{request.base_url}api/webhook/stripe"
+    stripe_service = SubscriptionStripeService(api_key=stripe_api_key, webhook_url=webhook_url)
+    
+    try:
+        webhook_response = await stripe_service.handle_webhook(body, signature)
+        
+        event_type = webhook_response.event_type
+        metadata = webhook_response.metadata
+        session_id = webhook_response.session_id
+        
+        user_id = metadata.get("user_id")
+        if not user_id:
+            logger.warning(f"Webhook event {event_type} missing user_id in metadata")
+            return {"received": True}
+        
+        if event_type == "checkout.session.completed":
+            # Update subscription from successful checkout
+            update_data = get_subscription_update_from_checkout(webhook_response, metadata)
+            await db.user_settings.update_one(
+                {"user_id": user_id},
+                {"$set": {**update_data, "updated_at": serialize_datetime(datetime.now(timezone.utc))}}
+            )
+            
+            # Update transaction
+            await db.payment_transactions.update_one(
+                {"session_id": session_id},
+                {"$set": {"status": "completed", "completed_at": serialize_datetime(datetime.now(timezone.utc))}}
+            )
+            
+            logger.info(f"Subscription activated for user {user_id}")
+        
+        elif event_type == "invoice.payment_failed":
+            # Start grace period
+            update_data = get_payment_failed_update()
+            await db.user_settings.update_one(
+                {"user_id": user_id},
+                {"$set": {**update_data, "updated_at": serialize_datetime(datetime.now(timezone.utc))}}
+            )
+            logger.info(f"Payment failed for user {user_id}, grace period started")
+        
+        elif event_type == "invoice.payment_succeeded":
+            # Clear grace period and extend subscription
+            settings = await db.user_settings.find_one({"user_id": user_id}, {"_id": 0, "subscription": 1})
+            billing_cycle = settings.get("subscription", {}).get("billing_cycle", "monthly") if settings else "monthly"
+            update_data = get_payment_succeeded_update(billing_cycle)
+            await db.user_settings.update_one(
+                {"user_id": user_id},
+                {"$set": {**update_data, "updated_at": serialize_datetime(datetime.now(timezone.utc))}}
+            )
+            
+            # Reset usage for new period
+            reset_data = get_reset_usage_data()
+            await db.user_settings.update_one(
+                {"user_id": user_id},
+                {"$set": {"usage": reset_data}}
+            )
+            logger.info(f"Payment succeeded for user {user_id}")
+        
+        elif event_type == "customer.subscription.deleted":
+            # Downgrade to free (keep content)
+            update_data = get_subscription_expired_update()
+            await db.user_settings.update_one(
+                {"user_id": user_id},
+                {"$set": {**update_data, "updated_at": serialize_datetime(datetime.now(timezone.utc))}}
+            )
+            logger.info(f"Subscription expired for user {user_id}, downgraded to free")
+        
+        return {"received": True}
+    except Exception as e:
+        logger.error(f"Webhook processing failed: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+# ============== Usage Increment Helpers ==============
+
+async def increment_usage(user_id: str, field: str, amount: int = 1):
+    """Increment a usage counter"""
+    await db.user_settings.update_one(
+        {"user_id": user_id},
+        {
+            "$inc": {f"usage.{field}": amount},
+            "$set": {"updated_at": serialize_datetime(datetime.now(timezone.utc))}
+        }
+    )
+
+async def check_usage_limit(user_id: str, usage_type: str) -> bool:
+    """Check if user has remaining usage for a specific type"""
+    settings = await get_user_settings(user_id)
+    subscription = settings.subscription if hasattr(settings, 'subscription') else get_default_subscription()
+    usage = settings.usage if hasattr(settings, 'usage') else get_default_usage()
+    
+    effective_tier = get_effective_tier(subscription)
+    limit = get_usage_limit(effective_tier, usage_type)
+    
+    if limit == -1:  # Unlimited
+        return True
+    
+    # Map usage_type to usage field
+    usage_field_map = {
+        "posts_per_month": "posts_created",
+        "ai_generations_per_month": "ai_generations",
+        "ai_hook_improvements_per_month": "ai_hook_improvements",
+        "url_imports_per_month": "url_imports",
+        "gem_extractions_per_month": "gem_extractions",
+        "voice_analyses_per_month": "voice_analyses",
+        "comment_drafts_per_month": "comment_drafts",
+    }
+    
+    usage_field = usage_field_map.get(usage_type, usage_type)
+    current = usage.get(usage_field, 0)
+    
+    return current < limit
+
+async def check_resource_limit(user_id: str, resource_type: str, collection: str) -> bool:
+    """Check if user can add more of a resource type"""
+    settings = await get_user_settings(user_id)
+    subscription = settings.subscription if hasattr(settings, 'subscription') else get_default_subscription()
+    
+    effective_tier = get_effective_tier(subscription)
+    limit = get_usage_limit(effective_tier, resource_type)
+    
+    if limit == -1:  # Unlimited
+        return True
+    
+    current_count = await db[collection].count_documents({"user_id": user_id})
+    return current_count < limit
 
 # ============== Root Route ==============
 

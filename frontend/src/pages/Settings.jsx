@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Loader2, Save, Key, Cpu, Check, Linkedin, Link2, Unlink, Settings2, ExternalLink } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Loader2, Save, Key, Cpu, Check, Linkedin, Link2, Unlink, Settings2, ExternalLink, CreditCard, Crown, Calendar, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,7 +29,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { getSettings, updateSettings, getLinkedInAuthUrl, disconnectLinkedIn } from '@/lib/api';
+import { getSettings, updateSettings, getLinkedInAuthUrl, disconnectLinkedIn, subscriptionAPI } from '@/lib/api';
+import { useSubscription } from '@/hooks/useSubscription';
+import { UsageDashboard, GracePeriodBanner } from '@/components/subscription';
 import { cn } from '@/lib/utils';
 
 const PROVIDERS = [
@@ -61,10 +63,13 @@ const MODELS = {
 
 export default function Settings() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { subscription, usage, tier, effectiveTier, isInGracePeriod, refresh: refreshSubscription } = useSubscription();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [connectingLinkedIn, setConnectingLinkedIn] = useState(false);
   const [linkedInConfigOpen, setLinkedInConfigOpen] = useState(false);
+  const [cancellingSubscription, setCancellingSubscription] = useState(false);
   const [settings, setSettings] = useState({
     ai_provider: 'anthropic',
     ai_model: 'claude-sonnet-4-5-20250929',
@@ -84,7 +89,41 @@ export default function Settings() {
     if (searchParams.get('linkedin') === 'connected') {
       toast.success('LinkedIn connected successfully!');
     }
+    
+    // Check for subscription success
+    if (searchParams.get('subscription') === 'success') {
+      const sessionId = searchParams.get('session_id');
+      if (sessionId) {
+        pollCheckoutStatus(sessionId);
+      }
+    }
   }, [searchParams]);
+
+  const pollCheckoutStatus = async (sessionId, attempts = 0) => {
+    const maxAttempts = 5;
+    const pollInterval = 2000;
+
+    if (attempts >= maxAttempts) {
+      toast.info('Payment processing. Check back shortly.');
+      return;
+    }
+
+    try {
+      const res = await subscriptionAPI.getCheckoutStatus(sessionId);
+      if (res.data.payment_status === 'paid') {
+        toast.success(`Welcome to ${res.data.tier}! Your subscription is now active.`);
+        refreshSubscription();
+        // Clear URL params
+        navigate('/settings', { replace: true });
+        return;
+      }
+      
+      // Continue polling
+      setTimeout(() => pollCheckoutStatus(sessionId, attempts + 1), pollInterval);
+    } catch (error) {
+      console.error('Failed to check payment status:', error);
+    }
+  };
 
   const fetchSettings = async () => {
     setLoading(true);
@@ -181,6 +220,29 @@ export default function Settings() {
     }
   };
 
+  const handleCancelSubscription = async () => {
+    setCancellingSubscription(true);
+    try {
+      await subscriptionAPI.cancel();
+      toast.success('Subscription will be cancelled at the end of the billing period');
+      refreshSubscription();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to cancel subscription');
+    } finally {
+      setCancellingSubscription(false);
+    }
+  };
+
+  const handleReactivateSubscription = async () => {
+    try {
+      await subscriptionAPI.reactivate();
+      toast.success('Subscription reactivated!');
+      refreshSubscription();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to reactivate subscription');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -191,6 +253,12 @@ export default function Settings() {
 
   const hasLinkedInCredentials = settings.linkedin_client_id && settings.linkedin_client_secret && settings.linkedin_redirect_uri;
 
+  const tierColors = {
+    free: 'text-neutral-400',
+    basic: 'text-electric-blue',
+    premium: 'text-amber-400',
+  };
+
   return (
     <div className="p-8 max-w-2xl mx-auto space-y-8">
       {/* Header */}
@@ -199,6 +267,122 @@ export default function Settings() {
           Settings
         </h1>
         <p className="text-neutral-400 mt-2">Configure your AI model and integrations</p>
+      </div>
+
+      {/* Grace Period Banner */}
+      <GracePeriodBanner />
+
+      {/* Subscription Card */}
+      <div className="card-surface p-6 space-y-6">
+        <div className="flex items-center gap-3 pb-4 border-b border-white/10">
+          <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+            <Crown className="w-5 h-5 text-amber-400" />
+          </div>
+          <div>
+            <h2 className="font-heading text-lg font-semibold uppercase tracking-wide text-white">
+              Subscription
+            </h2>
+            <p className="text-xs text-neutral-500">Manage your plan and billing</p>
+          </div>
+        </div>
+
+        {/* Current Plan */}
+        <div className="flex items-center justify-between p-4 rounded-lg bg-neutral-900/50 border border-white/10">
+          <div className="flex items-center gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-white font-medium">Current Plan:</span>
+                <span className={cn("font-semibold capitalize", tierColors[effectiveTier])}>
+                  {effectiveTier}
+                </span>
+                {subscription?.status === 'active' && tier !== 'free' && (
+                  <Check className="w-4 h-4 text-emerald-400" />
+                )}
+              </div>
+              {tier !== 'free' && subscription?.billing_cycle && (
+                <p className="text-xs text-neutral-400 mt-1">
+                  <Calendar className="w-3 h-3 inline mr-1" />
+                  {subscription.billing_cycle === 'annual' ? 'Annual' : 'Monthly'} billing
+                  {subscription?.current_period_end && (
+                    <> • Renews {new Date(subscription.current_period_end).toLocaleDateString()}</>
+                  )}
+                </p>
+              )}
+              {subscription?.cancel_at_period_end && (
+                <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  Cancels at end of billing period
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            {tier === 'free' ? (
+              <Button onClick={() => navigate('/pricing')} className="btn-primary" data-testid="upgrade-btn">
+                Upgrade
+              </Button>
+            ) : subscription?.cancel_at_period_end ? (
+              <Button onClick={handleReactivateSubscription} className="btn-primary" data-testid="reactivate-btn">
+                Reactivate
+              </Button>
+            ) : (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" className="text-neutral-400 hover:text-red-400" data-testid="cancel-sub-btn">
+                    Cancel Plan
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="bg-charcoal border-white/10">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-white">Cancel Subscription?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-neutral-400">
+                      Your subscription will remain active until the end of the current billing period. 
+                      All your content will be preserved, but some features will be restricted.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel className="border-white/10 text-white hover:bg-white/10">Keep Plan</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleCancelSubscription}
+                      disabled={cancellingSubscription}
+                      className="bg-red-500 hover:bg-red-600"
+                    >
+                      {cancellingSubscription && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                      Cancel Subscription
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
+        </div>
+
+        {/* Payment Method (if paid) */}
+        {tier !== 'free' && subscription?.payment_method_last4 && (
+          <div className="flex items-center justify-between p-4 rounded-lg bg-neutral-900/50 border border-white/10">
+            <div className="flex items-center gap-3">
+              <CreditCard className="w-5 h-5 text-neutral-400" />
+              <div>
+                <p className="text-white font-medium">
+                  {subscription.payment_method_brand?.charAt(0).toUpperCase() + subscription.payment_method_brand?.slice(1) || 'Card'} ending in {subscription.payment_method_last4}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Usage Dashboard */}
+        <UsageDashboard />
+
+        {/* View All Plans */}
+        <Button 
+          variant="outline" 
+          className="w-full border-white/10 text-neutral-300 hover:text-white"
+          onClick={() => navigate('/pricing')}
+          data-testid="view-plans-btn"
+        >
+          View All Plans
+        </Button>
       </div>
 
       {/* LinkedIn Integration Card */}
@@ -317,7 +501,7 @@ export default function Settings() {
                       className="bg-black/30 border-white/10 font-mono text-sm"
                     />
                     <p className="text-xs text-neutral-500 mt-1">
-                      Add this URL to your LinkedIn App's Authorized Redirect URLs
+                      Add this URL to your LinkedIn App&apos;s Authorized Redirect URLs
                     </p>
                   </div>
 
