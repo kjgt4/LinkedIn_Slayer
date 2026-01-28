@@ -1,129 +1,93 @@
-# LinkedIn Authority Engine - Product Requirements Document
+# LinkedIn Authority Engine - PRD
 
 ## Original Problem Statement
-Build a LinkedIn Authority Engine - an agentic AI-powered content creation platform to help professionals create high-quality, authority-building LinkedIn content that drives B2B leads and professional growth. App should use SLAY and PAS frameworks from the provided playbooks.
+Build a Stripe subscription system for the LinkedIn Authority Engine with:
+- Freemium model (Free, Basic, Premium tiers)
+- Multi-currency support (AUD, USD, EUR, GBP)
+- Usage tracking and feature gates
+- Stripe Checkout integration
+- 48-hour grace period for failed payments
 
 ## Architecture
-- **Frontend:** React 19 (CRA) with Tailwind CSS, shadcn/ui components
-- **Backend:** FastAPI (Python) with async/await
-- **Database:** MongoDB with Motor async driver
-- **Authentication:** Clerk (React SDK + JWT verification)
-- **AI Integration:** Claude Sonnet 4.5 via Emergent Universal Key (production: user-provided keys)
+
+### Backend (FastAPI + MongoDB)
+- `subscription.py` - Data models, usage limits, feature access configuration
+- `stripe_service.py` - Stripe integration using emergentintegrations
+- `server.py` - API endpoints for subscription management
+
+### Frontend (React)
+- `/pages/Pricing.jsx` - Pricing page with tier comparison
+- `/hooks/useSubscription.js` - Global subscription state management
+- `/components/subscription/` - Reusable subscription UI components
 
 ## User Personas
-1. **Content Creators** - Professionals building personal brands on LinkedIn
-2. **B2B Marketers** - Teams creating authority content for lead generation
-3. **Consultants/Coaches** - Experts monetizing their expertise through content
+1. **Free Users** - Getting started, limited usage (5 posts/month, 3 AI generations)
+2. **Basic Users ($29 AUD/mo)** - Active creators needing more capacity and LinkedIn integration
+3. **Premium Users ($79 AUD/mo)** - Power users with unlimited access and priority support
 
-## Core Requirements (Static)
-1. SLAY & PAS content frameworks
-2. 4-3-2-1 content calendar strategy
-3. Voice profile engine for authentic content
-4. Knowledge vault for expertise mining
-5. Hook validation (8-word rule)
-6. Mobile preview for LinkedIn rendering
-7. Performance analytics
-8. LinkedIn publishing integration (copy-to-clipboard for MVP)
-9. Strategic Engagement Hub for influencer tracking
+## Core Requirements
+- [x] Three-tier pricing structure
+- [x] Multi-currency support (AUD default)
+- [x] Monthly and annual billing (17% discount)
+- [x] Usage tracking per feature
+- [x] Feature gating by tier
+- [x] Grace period handling
+- [x] Stripe Checkout integration
+- [x] Webhook handling
 
-## What's Been Implemented
+## What's Been Implemented (2026-01-28)
 
-### January 28, 2025 - Cloudflare Deployment Preparation
-- ✅ Created `/cloudflare/README.md` with deployment guide
-- ✅ Created `/cloudflare/wrangler.toml` for Pages config
-- ✅ Added `/_redirects` for SPA client-side routing
-- ✅ Added `/public/_headers` for security headers
-- ✅ Verified all APIs work correctly
-- ✅ Confirmed Clerk auth flow working
+### Backend APIs
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/pricing` | GET | No | Get pricing for all tiers |
+| `/api/subscription` | GET | Yes | Get current subscription |
+| `/api/subscription/usage` | GET | Yes | Get usage metrics |
+| `/api/subscription/checkout` | POST | Yes | Create Stripe checkout |
+| `/api/subscription/cancel` | POST | Yes | Cancel subscription |
+| `/api/subscription/reactivate` | POST | Yes | Reactivate subscription |
+| `/api/webhook/stripe` | POST | No | Handle Stripe webhooks |
 
-### January 28, 2025 - Strategic Engagement Hub
-- ✅ Influencer Roster page (`/influencers`) with CRUD operations
-- ✅ Card grid with filtering by priority, status, themes
-- ✅ Add/Edit Influencer dialog with all fields
-- ✅ Discovery Assistant with AI-generated search strategies
-- ✅ Engagement Queue page (`/engagement`)
-- ✅ Post tracking with status management (new, draft_ready, engaged, skipped)
-- ✅ AI Comment Drafting with 3 variations (experience, insight, question)
-- ✅ Engagement goal selection (visibility, relationship, thought_leadership)
-- ✅ Copy to clipboard + open LinkedIn integration
-- ✅ Mark Engaged functionality with engagement type tracking
-- ✅ Engagement Analytics endpoint with metrics
-- ✅ Backend routes in `engagement_hub.py` with full auth
+### Frontend Components
+- `PricingCard` - Tier display with features
+- `CurrencySelector` - Multi-currency toggle
+- `UsageBar` - Progress bar for limits
+- `UsageDashboard` - Full usage overview
+- `FeatureGate` - Conditional rendering by feature
+- `UpgradePrompt` - Upgrade CTAs
+- `GracePeriodBanner` - Payment failure warning
 
-### January 28, 2025 - Clerk Authentication & Multi-User Workspace
-- ✅ Clerk React SDK integration (@clerk/clerk-react)
-- ✅ JWT token verification in FastAPI backend
-- ✅ Multi-user workspace isolation (all data filtered by user_id)
-- ✅ Protected routes with SignedIn/SignedOut components
-- ✅ User sync endpoint (/api/auth/sync)
-- ✅ Social login support (Google, LinkedIn, GitHub)
-- ✅ UserButton component in sidebar
-- ✅ AuthContext for token management
-
-### Previously Implemented (MVP)
-- ✅ Dashboard with weekly calendar
-- ✅ Content editor with SLAY/PAS frameworks
-- ✅ Hook validator with 8-word rule
-- ✅ Mobile preview component
-- ✅ Knowledge vault with file upload
-- ✅ Voice profile engine with AI analysis
-- ✅ Topic suggestions with inspiration URLs
-- ✅ Performance analytics dashboard
-- ✅ LinkedIn OAuth integration (user-provided API credentials)
-- ✅ Engagement timer (30-min window)
-- ✅ AI content generation
-- ✅ Copy-to-clipboard for LinkedIn publishing
-
-## Deployment Configuration
-
-### Cloudflare Pages (Frontend)
-- Build command: `cd frontend && yarn install && yarn build`
-- Build output: `frontend/build`
-- SPA routing via `_redirects` file
-
-### Backend (External Service)
-Recommended: Render.com, Railway, or Fly.io for Python FastAPI
-
-### Environment Variables
-**Frontend:**
-- `REACT_APP_BACKEND_URL`
-- `REACT_APP_CLERK_PUBLISHABLE_KEY`
-
-**Backend:**
-- `MONGO_URL`
-- `DB_NAME`
-- `CLERK_SECRET_KEY`
-- `EMERGENT_LLM_KEY` (optional - users can provide own keys)
-- `CORS_ORIGINS`
+### Pricing Structure
+| Feature | Free | Basic | Premium |
+|---------|------|-------|---------|
+| Posts/month | 5 | 30 | Unlimited |
+| AI generations | 3 | 20 | Unlimited |
+| Knowledge items | 10 | 50 | Unlimited |
+| Voice profiles | 1 | 3 | Unlimited |
+| LinkedIn integration | No | Yes | Yes |
+| Comment drafting | No | 10/mo | Unlimited |
+| Export reports | No | No | Yes |
 
 ## Prioritized Backlog
 
-### P0 - Critical (Next)
-- [ ] Engagement Reminders & Notifications system
-- [ ] Browser notifications for engagement reminders
-- [ ] Production Clerk keys setup
+### P0 - Critical
+- [x] Stripe Checkout integration
+- [x] Subscription status tracking
+- [x] Usage limit enforcement
 
 ### P1 - High Priority
-- [ ] Team/organization workspace sharing
-- [ ] Role-based access control (admin, editor, viewer)
-- [ ] LinkedIn post analytics sync
-- [ ] Content calendar drag-and-drop
+- [ ] Stripe Customer Portal integration for payment method updates
+- [ ] Email notifications for subscription events
+- [ ] Admin dashboard for subscription management
 
 ### P2 - Medium Priority
-- [ ] Bulk import influencers (CSV)
-- [ ] A/B hook testing
-- [ ] Competitor content analysis
-- [ ] Browser extension for post capture
+- [ ] Coupon/promo code support
+- [ ] Team/organization subscriptions
+- [ ] Usage analytics dashboard
 
-## Tech Stack Summary
-| Layer | Technology |
-|-------|------------|
-| Frontend | React 19, Tailwind CSS, shadcn/ui |
-| Backend | FastAPI (Python), Motor (async MongoDB) |
-| Database | MongoDB |
-| Auth | Clerk (JWT) |
-| AI | Claude Sonnet 4.5 (or user-provided) |
-| Hosting | Cloudflare Pages (FE) + External (BE) |
-
-## GitHub Repository
-https://github.com/kjgt4/LinkedIn_Slayer.git
+## Next Tasks
+1. Add Stripe Customer Portal for self-service billing management
+2. Implement email notifications (payment confirmation, renewal reminder)
+3. Add subscription analytics for admin
+4. Apply feature gates throughout the app (content creation, vault, etc.)
+5. Add real Clerk production keys for full auth flow testing
