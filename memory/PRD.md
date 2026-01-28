@@ -24,8 +24,23 @@ Build a LinkedIn Authority Engine - an agentic AI-powered content creation platf
 6. Mobile preview for LinkedIn rendering
 7. Performance analytics
 8. LinkedIn publishing integration
+9. Strategic Engagement Hub for influencer tracking
 
 ## What's Been Implemented
+
+### January 28, 2025 - Strategic Engagement Hub
+- ✅ Influencer Roster page (`/influencers`) with CRUD operations
+- ✅ Card grid with filtering by priority, status, themes
+- ✅ Add/Edit Influencer dialog with all fields
+- ✅ Discovery Assistant with AI-generated search strategies
+- ✅ Engagement Queue page (`/engagement`)
+- ✅ Post tracking with status management (new, draft_ready, engaged, skipped)
+- ✅ AI Comment Drafting with 3 variations (experience, insight, question)
+- ✅ Engagement goal selection (visibility, relationship, thought_leadership)
+- ✅ Copy to clipboard + open LinkedIn integration
+- ✅ Mark Engaged functionality with engagement type tracking
+- ✅ Engagement Analytics endpoint with metrics
+- ✅ Backend routes in `engagement_hub.py` with full auth
 
 ### January 28, 2025 - Clerk Authentication & Multi-User Workspace
 - ✅ Clerk React SDK integration (@clerk/clerk-react)
@@ -53,26 +68,27 @@ Build a LinkedIn Authority Engine - an agentic AI-powered content creation platf
 ## Prioritized Backlog
 
 ### P0 - Critical (Next)
-- [ ] Team/organization workspace sharing (Phase 2 of multi-user)
-- [ ] Role-based access control (admin, editor, viewer)
+- [ ] Engagement Reminders & Notifications system
+- [ ] Browser notifications for engagement reminders
+- [ ] Engagement streaks tracking
 
 ### P1 - High Priority
+- [ ] Team/organization workspace sharing
+- [ ] Role-based access control (admin, editor, viewer)
 - [ ] LinkedIn post analytics sync
 - [ ] Content calendar drag-and-drop
-- [ ] Batch content scheduling
-- [ ] Export/import voice profiles
 
 ### P2 - Medium Priority
+- [ ] Bulk import influencers (CSV)
 - [ ] A/B hook testing
 - [ ] Competitor content analysis
-- [ ] Content performance predictions
-- [ ] Browser extension for content capture
+- [ ] Browser extension for post capture
 
 ## Next Tasks
-1. Test full authentication flow with real user sign-up
-2. Verify workspace isolation works correctly
-3. Add team/organization features (Phase 2)
-4. Implement role-based permissions
+1. Test full engagement flow with real influencers and posts
+2. Implement engagement reminders and notifications
+3. Add engagement heatmap visualization to analytics
+4. Team/organization features (Phase 2)
 
 ## Environment Variables Required
 - `REACT_APP_CLERK_PUBLISHABLE_KEY` - Clerk frontend key
