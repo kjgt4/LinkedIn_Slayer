@@ -1,0 +1,20 @@
+# Render.com configuration
+# Place this in the backend/ directory
+
+services:
+  - type: web
+    name: linkedin-authority-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: MONGO_URL
+        sync: false
+      - key: DB_NAME
+        value: linkedin_authority
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: EMERGENT_LLM_KEY
+        sync: false
