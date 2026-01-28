@@ -22,7 +22,7 @@ export function GracePeriodBanner({ className }) {
         <div>
           <p className="text-white font-medium">Payment Failed</p>
           <p className="text-sm text-neutral-400">
-            We couldn't process your payment. Update within{' '}
+            We couldn&apos;t process your payment. Update within{' '}
             <span className="text-amber-400 font-medium">{gracePeriodHours} hours</span>{' '}
             to keep your {tier} features.
           </p>
