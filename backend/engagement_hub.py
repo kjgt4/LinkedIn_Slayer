@@ -4,7 +4,7 @@ Enables tracking influencers, their posts, and AI-assisted comment drafting
 """
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Annotated
 import uuid
 from datetime import datetime, timezone, timedelta
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -12,6 +12,7 @@ import os
 import logging
 import json
 import re
+from auth import RequiredUserId
 
 logger = logging.getLogger(__name__)
 
