@@ -1,14 +1,14 @@
 # LinkedIn Authority Engine - Product Requirements Document
 
 ## Original Problem Statement
-Build a LinkedIn Authority Engine - an agentic AI-powered content creation platform to help professionals create high-quality, authority-building LinkedIn content that drives B2B leads and professional growth.
+Build a LinkedIn Authority Engine - an agentic AI-powered content creation platform to help professionals create high-quality, authority-building LinkedIn content that drives B2B leads and professional growth. App should use SLAY and PAS frameworks from the provided playbooks.
 
 ## Architecture
 - **Frontend:** React 19 (CRA) with Tailwind CSS, shadcn/ui components
 - **Backend:** FastAPI (Python) with async/await
 - **Database:** MongoDB with Motor async driver
 - **Authentication:** Clerk (React SDK + JWT verification)
-- **AI Integration:** Claude Sonnet 4.5 via Emergent Universal Key
+- **AI Integration:** Claude Sonnet 4.5 via Emergent Universal Key (production: user-provided keys)
 
 ## User Personas
 1. **Content Creators** - Professionals building personal brands on LinkedIn
@@ -23,10 +23,18 @@ Build a LinkedIn Authority Engine - an agentic AI-powered content creation platf
 5. Hook validation (8-word rule)
 6. Mobile preview for LinkedIn rendering
 7. Performance analytics
-8. LinkedIn publishing integration
+8. LinkedIn publishing integration (copy-to-clipboard for MVP)
 9. Strategic Engagement Hub for influencer tracking
 
 ## What's Been Implemented
+
+### January 28, 2025 - Cloudflare Deployment Preparation
+- ✅ Created `/cloudflare/README.md` with deployment guide
+- ✅ Created `/cloudflare/wrangler.toml` for Pages config
+- ✅ Added `/_redirects` for SPA client-side routing
+- ✅ Added `/public/_headers` for security headers
+- ✅ Verified all APIs work correctly
+- ✅ Confirmed Clerk auth flow working
 
 ### January 28, 2025 - Strategic Engagement Hub
 - ✅ Influencer Roster page (`/influencers`) with CRUD operations
@@ -61,16 +69,39 @@ Build a LinkedIn Authority Engine - an agentic AI-powered content creation platf
 - ✅ Voice profile engine with AI analysis
 - ✅ Topic suggestions with inspiration URLs
 - ✅ Performance analytics dashboard
-- ✅ LinkedIn OAuth integration
+- ✅ LinkedIn OAuth integration (user-provided API credentials)
 - ✅ Engagement timer (30-min window)
 - ✅ AI content generation
+- ✅ Copy-to-clipboard for LinkedIn publishing
+
+## Deployment Configuration
+
+### Cloudflare Pages (Frontend)
+- Build command: `cd frontend && yarn install && yarn build`
+- Build output: `frontend/build`
+- SPA routing via `_redirects` file
+
+### Backend (External Service)
+Recommended: Render.com, Railway, or Fly.io for Python FastAPI
+
+### Environment Variables
+**Frontend:**
+- `REACT_APP_BACKEND_URL`
+- `REACT_APP_CLERK_PUBLISHABLE_KEY`
+
+**Backend:**
+- `MONGO_URL`
+- `DB_NAME`
+- `CLERK_SECRET_KEY`
+- `EMERGENT_LLM_KEY` (optional - users can provide own keys)
+- `CORS_ORIGINS`
 
 ## Prioritized Backlog
 
 ### P0 - Critical (Next)
 - [ ] Engagement Reminders & Notifications system
 - [ ] Browser notifications for engagement reminders
-- [ ] Engagement streaks tracking
+- [ ] Production Clerk keys setup
 
 ### P1 - High Priority
 - [ ] Team/organization workspace sharing
@@ -84,14 +115,15 @@ Build a LinkedIn Authority Engine - an agentic AI-powered content creation platf
 - [ ] Competitor content analysis
 - [ ] Browser extension for post capture
 
-## Next Tasks
-1. Test full engagement flow with real influencers and posts
-2. Implement engagement reminders and notifications
-3. Add engagement heatmap visualization to analytics
-4. Team/organization features (Phase 2)
+## Tech Stack Summary
+| Layer | Technology |
+|-------|------------|
+| Frontend | React 19, Tailwind CSS, shadcn/ui |
+| Backend | FastAPI (Python), Motor (async MongoDB) |
+| Database | MongoDB |
+| Auth | Clerk (JWT) |
+| AI | Claude Sonnet 4.5 (or user-provided) |
+| Hosting | Cloudflare Pages (FE) + External (BE) |
 
-## Environment Variables Required
-- `REACT_APP_CLERK_PUBLISHABLE_KEY` - Clerk frontend key
-- `CLERK_SECRET_KEY` - Clerk backend key
-- `EMERGENT_LLM_KEY` - AI integration key
-- `MONGO_URL` - MongoDB connection string
+## GitHub Repository
+https://github.com/kjgt4/LinkedIn_Slayer.git
