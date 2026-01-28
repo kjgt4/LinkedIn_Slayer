@@ -253,6 +253,12 @@ export default function Settings() {
 
   const hasLinkedInCredentials = settings.linkedin_client_id && settings.linkedin_client_secret && settings.linkedin_redirect_uri;
 
+  const tierColors = {
+    free: 'text-neutral-400',
+    basic: 'text-electric-blue',
+    premium: 'text-amber-400',
+  };
+
   return (
     <div className="p-8 max-w-2xl mx-auto space-y-8">
       {/* Header */}
@@ -261,6 +267,122 @@ export default function Settings() {
           Settings
         </h1>
         <p className="text-neutral-400 mt-2">Configure your AI model and integrations</p>
+      </div>
+
+      {/* Grace Period Banner */}
+      <GracePeriodBanner />
+
+      {/* Subscription Card */}
+      <div className="card-surface p-6 space-y-6">
+        <div className="flex items-center gap-3 pb-4 border-b border-white/10">
+          <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+            <Crown className="w-5 h-5 text-amber-400" />
+          </div>
+          <div>
+            <h2 className="font-heading text-lg font-semibold uppercase tracking-wide text-white">
+              Subscription
+            </h2>
+            <p className="text-xs text-neutral-500">Manage your plan and billing</p>
+          </div>
+        </div>
+
+        {/* Current Plan */}
+        <div className="flex items-center justify-between p-4 rounded-lg bg-neutral-900/50 border border-white/10">
+          <div className="flex items-center gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-white font-medium">Current Plan:</span>
+                <span className={cn("font-semibold capitalize", tierColors[effectiveTier])}>
+                  {effectiveTier}
+                </span>
+                {subscription?.status === 'active' && tier !== 'free' && (
+                  <Check className="w-4 h-4 text-emerald-400" />
+                )}
+              </div>
+              {tier !== 'free' && subscription?.billing_cycle && (
+                <p className="text-xs text-neutral-400 mt-1">
+                  <Calendar className="w-3 h-3 inline mr-1" />
+                  {subscription.billing_cycle === 'annual' ? 'Annual' : 'Monthly'} billing
+                  {subscription?.current_period_end && (
+                    <> • Renews {new Date(subscription.current_period_end).toLocaleDateString()}</>
+                  )}
+                </p>
+              )}
+              {subscription?.cancel_at_period_end && (
+                <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  Cancels at end of billing period
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            {tier === 'free' ? (
+              <Button onClick={() => navigate('/pricing')} className="btn-primary" data-testid="upgrade-btn">
+                Upgrade
+              </Button>
+            ) : subscription?.cancel_at_period_end ? (
+              <Button onClick={handleReactivateSubscription} className="btn-primary" data-testid="reactivate-btn">
+                Reactivate
+              </Button>
+            ) : (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" className="text-neutral-400 hover:text-red-400" data-testid="cancel-sub-btn">
+                    Cancel Plan
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="bg-charcoal border-white/10">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-white">Cancel Subscription?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-neutral-400">
+                      Your subscription will remain active until the end of the current billing period. 
+                      All your content will be preserved, but some features will be restricted.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel className="border-white/10 text-white hover:bg-white/10">Keep Plan</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleCancelSubscription}
+                      disabled={cancellingSubscription}
+                      className="bg-red-500 hover:bg-red-600"
+                    >
+                      {cancellingSubscription && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                      Cancel Subscription
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
+        </div>
+
+        {/* Payment Method (if paid) */}
+        {tier !== 'free' && subscription?.payment_method_last4 && (
+          <div className="flex items-center justify-between p-4 rounded-lg bg-neutral-900/50 border border-white/10">
+            <div className="flex items-center gap-3">
+              <CreditCard className="w-5 h-5 text-neutral-400" />
+              <div>
+                <p className="text-white font-medium">
+                  {subscription.payment_method_brand?.charAt(0).toUpperCase() + subscription.payment_method_brand?.slice(1) || 'Card'} ending in {subscription.payment_method_last4}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Usage Dashboard */}
+        <UsageDashboard />
+
+        {/* View All Plans */}
+        <Button 
+          variant="outline" 
+          className="w-full border-white/10 text-neutral-300 hover:text-white"
+          onClick={() => navigate('/pricing')}
+          data-testid="view-plans-btn"
+        >
+          View All Plans
+        </Button>
       </div>
 
       {/* LinkedIn Integration Card */}
