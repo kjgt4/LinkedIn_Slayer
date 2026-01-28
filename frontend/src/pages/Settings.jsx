@@ -220,6 +220,29 @@ export default function Settings() {
     }
   };
 
+  const handleCancelSubscription = async () => {
+    setCancellingSubscription(true);
+    try {
+      await subscriptionAPI.cancel();
+      toast.success('Subscription will be cancelled at the end of the billing period');
+      refreshSubscription();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to cancel subscription');
+    } finally {
+      setCancellingSubscription(false);
+    }
+  };
+
+  const handleReactivateSubscription = async () => {
+    try {
+      await subscriptionAPI.reactivate();
+      toast.success('Subscription reactivated!');
+      refreshSubscription();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to reactivate subscription');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
