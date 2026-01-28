@@ -143,6 +143,44 @@ class SubscriptionStripeService:
             logger.error(f"Webhook handling failed: {str(e)}")
             raise HTTPException(status_code=400, detail=f"Webhook handling failed: {str(e)}")
 
+    async def cancel_subscription(self, subscription_id: str) -> bool:
+        """
+        Cancel a subscription at period end via Stripe API.
+        Returns True if successful.
+        """
+        import stripe
+        stripe.api_key = self.api_key
+
+        try:
+            stripe.Subscription.modify(
+                subscription_id,
+                cancel_at_period_end=True
+            )
+            logger.info(f"Subscription {subscription_id} marked for cancellation at period end")
+            return True
+        except stripe.error.StripeError as e:
+            logger.error(f"Failed to cancel subscription {subscription_id}: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Failed to cancel subscription: {str(e)}")
+
+    async def reactivate_subscription(self, subscription_id: str) -> bool:
+        """
+        Reactivate a cancelled subscription via Stripe API.
+        Returns True if successful.
+        """
+        import stripe
+        stripe.api_key = self.api_key
+
+        try:
+            stripe.Subscription.modify(
+                subscription_id,
+                cancel_at_period_end=False
+            )
+            logger.info(f"Subscription {subscription_id} reactivated")
+            return True
+        except stripe.error.StripeError as e:
+            logger.error(f"Failed to reactivate subscription {subscription_id}: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Failed to reactivate subscription: {str(e)}")
+
 # ============== Subscription Update Helpers ==============
 
 def get_subscription_update_from_checkout(
@@ -151,13 +189,14 @@ def get_subscription_update_from_checkout(
 ) -> dict:
     """
     Generate subscription update data from successful checkout.
+    Stores Stripe IDs for future subscription management.
     """
     tier = metadata.get("tier", "basic")
     billing_cycle = metadata.get("billing_cycle", "monthly")
     currency = metadata.get("currency", DEFAULT_CURRENCY)
-    
+
     now = datetime.now(timezone.utc)
-    
+
     # Calculate period end based on billing cycle
     if billing_cycle == "annual":
         from datetime import timedelta
@@ -165,7 +204,11 @@ def get_subscription_update_from_checkout(
     else:
         from datetime import timedelta
         period_end = now + timedelta(days=30)
-    
+
+    # Extract Stripe IDs from checkout status for subscription management
+    stripe_subscription_id = getattr(checkout_status, 'subscription', None)
+    stripe_customer_id = getattr(checkout_status, 'customer', None)
+
     return {
         "subscription.tier": tier,
         "subscription.status": "active",
@@ -177,6 +220,8 @@ def get_subscription_update_from_checkout(
         "subscription.cancel_at_period_end": False,
         "subscription.payment_failed_at": None,
         "subscription.grace_period_ends": None,
+        "subscription.stripe_subscription_id": stripe_subscription_id,
+        "subscription.stripe_customer_id": stripe_customer_id,
     }
 
 def get_subscription_cancellation_update() -> dict:

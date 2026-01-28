@@ -1739,7 +1739,7 @@ async def create_checkout(request: CheckoutRequest, http_request: Request, user_
     frontend_url = os.environ.get("FRONTEND_URL", origin.replace(":8001", ":3000"))
     success_url = f"{frontend_url}/settings?subscription=success&session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{frontend_url}/pricing?cancelled=true"
-    webhook_url = f"{origin}api/webhook/stripe"
+    webhook_url = f"{origin}/api/webhook/stripe"
     
     # Initialize Stripe service
     stripe_service = SubscriptionStripeService(api_key=stripe_api_key, webhook_url=webhook_url)
@@ -1830,35 +1830,55 @@ async def get_checkout_status(session_id: str, user_id: RequiredUserId):
 @api_router.post("/subscription/cancel")
 async def cancel_subscription(user_id: RequiredUserId):
     """Cancel subscription at period end"""
+    stripe_api_key = os.environ.get("STRIPE_API_KEY")
+    if not stripe_api_key:
+        raise HTTPException(status_code=500, detail="Stripe API key not configured")
+
     settings = await get_user_settings(user_id)
     subscription = settings.subscription if hasattr(settings, 'subscription') else get_default_subscription()
-    
+
     if subscription.get("tier") == "free":
         raise HTTPException(status_code=400, detail="No active subscription to cancel")
-    
+
+    # Get Stripe subscription ID to cancel via Stripe API
+    stripe_subscription_id = subscription.get("stripe_subscription_id")
+    if stripe_subscription_id:
+        stripe_service = SubscriptionStripeService(api_key=stripe_api_key, webhook_url="")
+        await stripe_service.cancel_subscription(stripe_subscription_id)
+
     update_data = get_subscription_cancellation_update()
     await db.user_settings.update_one(
         {"user_id": user_id},
         {"$set": {**update_data, "updated_at": serialize_datetime(datetime.now(timezone.utc))}}
     )
-    
+
     return {"message": "Subscription will be cancelled at the end of the billing period"}
 
 @api_router.post("/subscription/reactivate")
 async def reactivate_subscription(user_id: RequiredUserId):
     """Reactivate a cancelled subscription"""
+    stripe_api_key = os.environ.get("STRIPE_API_KEY")
+    if not stripe_api_key:
+        raise HTTPException(status_code=500, detail="Stripe API key not configured")
+
     settings = await get_user_settings(user_id)
     subscription = settings.subscription if hasattr(settings, 'subscription') else get_default_subscription()
-    
+
     if not subscription.get("cancel_at_period_end"):
         raise HTTPException(status_code=400, detail="No cancellation to revert")
-    
+
+    # Get Stripe subscription ID to reactivate via Stripe API
+    stripe_subscription_id = subscription.get("stripe_subscription_id")
+    if stripe_subscription_id:
+        stripe_service = SubscriptionStripeService(api_key=stripe_api_key, webhook_url="")
+        await stripe_service.reactivate_subscription(stripe_subscription_id)
+
     update_data = get_subscription_reactivation_update()
     await db.user_settings.update_one(
         {"user_id": user_id},
         {"$set": {**update_data, "updated_at": serialize_datetime(datetime.now(timezone.utc))}}
     )
-    
+
     return {"message": "Subscription reactivated"}
 
 @api_router.get("/pricing")
