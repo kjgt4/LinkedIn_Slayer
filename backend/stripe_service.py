@@ -123,7 +123,7 @@ class SubscriptionStripeService:
             return session
         except Exception as e:
             logger.error(f"Failed to create checkout session: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Failed to create checkout session: {str(e)}")
+            raise HTTPException(status_code=500, detail="Failed to create checkout session. Please try again.")
     
     async def get_checkout_status(self, session_id: str) -> CheckoutStatusResponse:
         """Get status of a checkout session"""
@@ -132,7 +132,7 @@ class SubscriptionStripeService:
             return status
         except Exception as e:
             logger.error(f"Failed to get checkout status: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Failed to get checkout status: {str(e)}")
+            raise HTTPException(status_code=500, detail="Failed to retrieve checkout status. Please try again.")
     
     async def handle_webhook(self, body: bytes, signature: str):
         """Handle Stripe webhook events"""
@@ -141,7 +141,7 @@ class SubscriptionStripeService:
             return webhook_response
         except Exception as e:
             logger.error(f"Webhook handling failed: {str(e)}")
-            raise HTTPException(status_code=400, detail=f"Webhook handling failed: {str(e)}")
+            raise HTTPException(status_code=400, detail="Webhook processing failed")
 
     async def cancel_subscription(self, subscription_id: str) -> bool:
         """
@@ -160,7 +160,7 @@ class SubscriptionStripeService:
             return True
         except stripe.error.StripeError as e:
             logger.error(f"Failed to cancel subscription {subscription_id}: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Failed to cancel subscription: {str(e)}")
+            raise HTTPException(status_code=500, detail="Failed to cancel subscription. Please try again or contact support.")
 
     async def reactivate_subscription(self, subscription_id: str) -> bool:
         """
@@ -179,7 +179,7 @@ class SubscriptionStripeService:
             return True
         except stripe.error.StripeError as e:
             logger.error(f"Failed to reactivate subscription {subscription_id}: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Failed to reactivate subscription: {str(e)}")
+            raise HTTPException(status_code=500, detail="Failed to reactivate subscription. Please try again or contact support.")
 
 # ============== Subscription Update Helpers ==============
 

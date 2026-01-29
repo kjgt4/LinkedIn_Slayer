@@ -506,7 +506,7 @@ Output as JSON with this exact format:
             
         except Exception as e:
             logger.error(f"Comment drafting error: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Failed to generate comments: {str(e)}")
+            raise HTTPException(status_code=500, detail="Failed to generate comments. Please try again.")
     
     # ============== AI Discovery Assistant ==============
     
@@ -575,7 +575,7 @@ Output as JSON with this exact format:
             
         except Exception as e:
             logger.error(f"Discovery suggestion error: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Failed to generate suggestions: {str(e)}")
+            raise HTTPException(status_code=500, detail="Failed to generate suggestions. Please try again.")
     
     # ============== Engagement Analytics ==============
     

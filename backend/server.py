@@ -878,7 +878,8 @@ async def add_knowledge_from_url(url: str, title: str, user_id: RequiredUserId, 
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to fetch URL: {str(e)}")
+        logger.error(f"Failed to fetch URL {url}: {str(e)}")
+        raise HTTPException(status_code=400, detail="Failed to fetch URL. Please check the URL and try again.")
     
     item = KnowledgeItem(
         user_id=user_id,
@@ -977,7 +978,7 @@ Output as JSON array:
         return {"gems": []}
     except Exception as e:
         logger.error(f"Gem extraction error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Gem extraction failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to extract gems. Please try again.")
 
 # ============== Inspiration URL Routes ==============
 
@@ -1055,7 +1056,8 @@ async def save_inspiration_to_vault(url_id: str, user_id: RequiredUserId):
             response.raise_for_status()
             content = response.text[:50000]
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to fetch URL: {str(e)}")
+        logger.error(f"Failed to fetch inspiration URL {url}: {str(e)}")
+        raise HTTPException(status_code=400, detail="Failed to fetch URL. Please check the URL and try again.")
     
     item = KnowledgeItem(
         user_id=user_id,
@@ -1300,7 +1302,7 @@ CTA: [Your call to action]
         }
     except Exception as e:
         logger.error(f"AI generation error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"AI generation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="AI content generation failed. Please try again.")
 
 @api_router.post("/ai/suggest-topics", response_model=List[TopicSuggestion])
 async def suggest_topics(user_id: RequiredUserId, context: Optional[str] = None, inspiration_url: Optional[str] = None):
@@ -1420,7 +1422,7 @@ SUGGESTIONS:
         return {"suggestions": response}
     except Exception as e:
         logger.error(f"Hook improvement error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Hook improvement failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Hook improvement failed. Please try again.")
 
 # ============== Hook Validation Route ==============
 
@@ -1788,7 +1790,7 @@ Provide a JSON response with:
         return {"error": "Could not parse analysis"}
     except Exception as e:
         logger.error(f"Voice analysis error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Voice analysis failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Voice analysis failed. Please try again.")
 
 # ============== Subscription Routes ==============
 
@@ -1940,7 +1942,7 @@ async def create_checkout(request: CheckoutRequest, http_request: Request, user_
         return {"checkout_url": session.url, "session_id": session.session_id}
     except Exception as e:
         logger.error(f"Checkout creation failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to create checkout session. Please try again.")
 
 @api_router.get("/subscription/checkout/status/{session_id}")
 async def get_checkout_status(session_id: str, user_id: RequiredUserId):
@@ -1993,7 +1995,7 @@ async def get_checkout_status(session_id: str, user_id: RequiredUserId):
         }
     except Exception as e:
         logger.error(f"Failed to get checkout status: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to retrieve checkout status. Please try again.")
 
 @api_router.post("/subscription/cancel")
 async def cancel_subscription(user_id: RequiredUserId):
@@ -2139,7 +2141,7 @@ async def stripe_webhook(request: Request):
         return {"received": True}
     except Exception as e:
         logger.error(f"Webhook processing failed: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Webhook processing failed")
 
 # ============== Usage Increment Helpers ==============
 
