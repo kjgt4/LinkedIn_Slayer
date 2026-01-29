@@ -345,13 +345,7 @@ function CommentDraftingDialog({ open, onOpenChange, post, onSuccess }) {
   const [engagementGoal, setEngagementGoal] = useState('relationship');
   const [openOnLinkedIn, setOpenOnLinkedIn] = useState(true);
 
-  useEffect(() => {
-    if (open && post) {
-      generateComments();
-    }
-  }, [open, post, engagementGoal]);
-
-  const generateComments = async () => {
+  const generateComments = useCallback(async () => {
     if (!post) return;
     setLoading(true);
     try {
@@ -373,7 +367,13 @@ function CommentDraftingDialog({ open, onOpenChange, post, onSuccess }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [post, engagementGoal]);
+
+  useEffect(() => {
+    if (open && post) {
+      generateComments();
+    }
+  }, [open, post, generateComments]);
 
   const handleUseComment = async () => {
     const currentApproach = selectedTab === 'experience' ? 'related_experience' 

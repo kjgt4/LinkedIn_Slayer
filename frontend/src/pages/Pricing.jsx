@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Loader2, Check, X, Sparkles, Zap, Star, Crown } from 'lucide-react';
 import { toast } from 'sonner';
@@ -39,16 +39,7 @@ export default function Pricing() {
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(null);
 
-  useEffect(() => {
-    fetchPricing();
-    
-    // Check for cancelled checkout
-    if (searchParams.get('cancelled') === 'true') {
-      toast.info('Checkout cancelled');
-    }
-  }, [currency, searchParams]);
-
-  const fetchPricing = async () => {
+  const fetchPricing = useCallback(async () => {
     try {
       const res = await subscriptionAPI.getPricing(currency);
       setPricing(res.data);
@@ -58,7 +49,16 @@ export default function Pricing() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currency]);
+
+  useEffect(() => {
+    fetchPricing();
+
+    // Check for cancelled checkout
+    if (searchParams.get('cancelled') === 'true') {
+      toast.info('Checkout cancelled');
+    }
+  }, [fetchPricing, searchParams]);
 
   const handleSelectPlan = async (tier) => {
     setCheckoutLoading(tier);

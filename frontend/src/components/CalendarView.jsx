@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getWeekCalendar } from '@/lib/api';
@@ -12,11 +12,7 @@ export default function CalendarView() {
   const [calendar, setCalendar] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchCalendar();
-  }, [weekOffset]);
-
-  const fetchCalendar = async () => {
+  const fetchCalendar = useCallback(async () => {
     setLoading(true);
     try {
       const response = await getWeekCalendar(weekOffset);
@@ -26,7 +22,11 @@ export default function CalendarView() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [weekOffset]);
+
+  useEffect(() => {
+    fetchCalendar();
+  }, [fetchCalendar]);
 
   const handleSlotClick = (date, slot, post) => {
     if (post) {

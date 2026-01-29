@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Loader2, Save, Key, Cpu, Check, Linkedin, Link2, Unlink, Settings2, ExternalLink, CreditCard, Crown, Calendar, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -82,24 +82,7 @@ export default function Settings() {
     linkedin_redirect_uri: '',
   });
 
-  useEffect(() => {
-    fetchSettings();
-
-    // Check for LinkedIn callback
-    if (searchParams.get('linkedin') === 'connected') {
-      toast.success('LinkedIn connected successfully!');
-    }
-    
-    // Check for subscription success
-    if (searchParams.get('subscription') === 'success') {
-      const sessionId = searchParams.get('session_id');
-      if (sessionId) {
-        pollCheckoutStatus(sessionId);
-      }
-    }
-  }, [searchParams]);
-
-  const pollCheckoutStatus = async (sessionId, attempts = 0) => {
+  const pollCheckoutStatus = useCallback(async (sessionId, attempts = 0) => {
     const maxAttempts = 5;
     const pollInterval = 2000;
 
@@ -123,7 +106,24 @@ export default function Settings() {
     } catch (error) {
       console.error('Failed to check payment status:', error);
     }
-  };
+  }, [refreshSubscription, navigate]);
+
+  useEffect(() => {
+    fetchSettings();
+
+    // Check for LinkedIn callback
+    if (searchParams.get('linkedin') === 'connected') {
+      toast.success('LinkedIn connected successfully!');
+    }
+
+    // Check for subscription success
+    if (searchParams.get('subscription') === 'success') {
+      const sessionId = searchParams.get('session_id');
+      if (sessionId) {
+        pollCheckoutStatus(sessionId);
+      }
+    }
+  }, [searchParams, pollCheckoutStatus]);
 
   const fetchSettings = async () => {
     setLoading(true);
