@@ -86,19 +86,7 @@ export default function Editor() {
     checkLinkedIn();
   }, []);
 
-  // Load existing post
-  useEffect(() => {
-    if (postId) {
-      loadPost();
-    } else {
-      const topic = searchParams.get('topic');
-      if (topic) {
-        setPost(prev => ({ ...prev, title: topic }));
-      }
-    }
-  }, [postId]);
-
-  const loadPost = async () => {
+  const loadPost = useCallback(async () => {
     setLoading(true);
     try {
       const response = await getPost(postId);
@@ -114,7 +102,19 @@ export default function Editor() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [postId, navigate]);
+
+  // Load existing post
+  useEffect(() => {
+    if (postId) {
+      loadPost();
+    } else {
+      const topic = searchParams.get('topic');
+      if (topic) {
+        setPost(prev => ({ ...prev, title: topic }));
+      }
+    }
+  }, [postId, loadPost, searchParams]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -275,7 +275,7 @@ export default function Editor() {
     if (combined && combined !== post.content) {
       // Only update if using framework editor
     }
-  }, [post.framework_sections, combineFrameworkContent]);
+  }, [post.framework_sections, combineFrameworkContent, post.content]);
 
   if (loading) {
     return (

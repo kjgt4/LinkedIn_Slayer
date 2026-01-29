@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Sparkles, RefreshCw, ArrowRight, Link, Loader2, Star, History, Database, ChevronDown, X } from 'lucide-react';
 import { suggestTopics, getInspirationUrls, saveInspirationUrl, toggleFavoriteUrl, deleteInspirationUrl, saveInspirationToVault } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -22,16 +22,16 @@ export default function TopicSuggestions({ onSelect }) {
   const [urlHistory, setUrlHistory] = useState([]);
   const [savingToVault, setSavingToVault] = useState(null);
 
-  const fetchUrlHistory = async () => {
+  const fetchUrlHistory = useCallback(async () => {
     try {
       const response = await getInspirationUrls();
       setUrlHistory(response.data);
     } catch (error) {
       console.error('Failed to fetch URL history:', error);
     }
-  };
+  }, []);
 
-  const fetchSuggestions = async (url = inspirationUrl) => {
+  const fetchSuggestions = useCallback(async (url = '') => {
     setLoading(true);
     try {
       // Save URL to history if provided
@@ -39,7 +39,7 @@ export default function TopicSuggestions({ onSelect }) {
         await saveInspirationUrl(url.trim());
         fetchUrlHistory();
       }
-      
+
       const response = await suggestTopics(null, url || null);
       setSuggestions(response.data);
     } catch (error) {
@@ -52,12 +52,12 @@ export default function TopicSuggestions({ onSelect }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchUrlHistory]);
 
   useEffect(() => {
     fetchSuggestions('');
     fetchUrlHistory();
-  }, []);
+  }, [fetchSuggestions, fetchUrlHistory]);
 
   const handleRefresh = () => {
     fetchSuggestions(inspirationUrl);

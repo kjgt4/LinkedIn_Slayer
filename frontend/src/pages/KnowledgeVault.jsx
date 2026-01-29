@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Upload, Link, FileText, Trash2, Sparkles, Loader2, Plus, 
   File, Globe, Mic, BookOpen, FolderOpen, Search, Tag
@@ -70,11 +70,7 @@ export default function KnowledgeVault() {
   const [newUrl, setNewUrl] = useState({ url: '', title: '', tags: '' });
   const [uploading, setUploading] = useState(false);
 
-  useEffect(() => {
-    fetchItems();
-  }, [filter]);
-
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     setLoading(true);
     try {
       const sourceType = filter === 'all' ? null : filter;
@@ -85,7 +81,11 @@ export default function KnowledgeVault() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
+
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
 
   const handleCreateItem = async () => {
     if (!newItem.title) {
