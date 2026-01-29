@@ -14,6 +14,8 @@ import json
 import re
 import aiofiles
 import httpx
+import ipaddress
+from urllib.parse import urlparse
 from auth import OptionalUserId, RequiredUserId, ClerkAuthError
 from engagement_hub import create_engagement_router
 from subscription import (
@@ -70,6 +72,82 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# ============== Security: SSRF Protection ==============
+
+# File upload configuration
+ALLOWED_FILE_EXTENSIONS = {'txt', 'md', 'pdf', 'doc', 'docx'}
+MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10MB max file size
+
+def is_safe_url(url: str) -> tuple[bool, str]:
+    """
+    Validate URL for SSRF protection.
+    Returns (is_safe, error_message).
+    Blocks internal IPs, localhost, and potentially dangerous schemes.
+    """
+    try:
+        parsed = urlparse(url)
+
+        # Only allow http and https schemes
+        if parsed.scheme not in ('http', 'https'):
+            return False, "Only HTTP and HTTPS URLs are allowed"
+
+        hostname = parsed.hostname
+        if not hostname:
+            return False, "Invalid URL: no hostname"
+
+        # Block localhost variations
+        localhost_patterns = [
+            'localhost',
+            '127.0.0.1',
+            '0.0.0.0',
+            '::1',
+            '[::1]',
+        ]
+        if hostname.lower() in localhost_patterns:
+            return False, "Localhost URLs are not allowed"
+
+        # Try to resolve hostname to check for internal IPs
+        # First check if hostname is already an IP address
+        try:
+            ip = ipaddress.ip_address(hostname)
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                return False, "Internal or reserved IP addresses are not allowed"
+        except ValueError:
+            # Not a direct IP, it's a hostname - this is fine
+            # DNS rebinding attacks are possible but this provides basic protection
+            pass
+
+        # Block cloud metadata endpoints
+        metadata_hosts = [
+            '169.254.169.254',  # AWS/GCP/Azure metadata
+            'metadata.google.internal',
+            'metadata.gcp.internal',
+        ]
+        if hostname.lower() in metadata_hosts or hostname.startswith('169.254.'):
+            return False, "Cloud metadata endpoints are not allowed"
+
+        return True, ""
+
+    except Exception as e:
+        return False, f"Invalid URL: {str(e)}"
+
+def validate_file_extension(filename: str) -> tuple[bool, str]:
+    """Validate file extension against whitelist."""
+    if '.' not in filename:
+        return False, "File must have an extension"
+    ext = filename.rsplit('.', 1)[-1].lower()
+    if ext not in ALLOWED_FILE_EXTENSIONS:
+        return False, f"File type '.{ext}' not allowed. Allowed types: {', '.join(ALLOWED_FILE_EXTENSIONS)}"
+    return True, ext
+
+def mask_sensitive_value(value: Optional[str], visible_chars: int = 4) -> Optional[str]:
+    """Mask a sensitive value, showing only the last N characters."""
+    if not value:
+        return None
+    if len(value) <= visible_chars:
+        return '*' * len(value)
+    return '*' * (len(value) - visible_chars) + value[-visible_chars:]
 
 # ============== Models ==============
 
@@ -129,6 +207,52 @@ class UserSettingsUpdate(BaseModel):
     linkedin_client_id: Optional[str] = None
     linkedin_client_secret: Optional[str] = None
     linkedin_redirect_uri: Optional[str] = None
+
+class UserSettingsResponse(BaseModel):
+    """Response model for user settings with sensitive data masked"""
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    user_id: str
+    ai_provider: Literal["anthropic", "openai", "gemini"]
+    ai_model: str
+    api_key_masked: Optional[str] = None  # Masked version of API key
+    has_api_key: bool = False  # Indicates if user has set an API key
+    use_emergent_key: bool
+    linkedin_connected: bool
+    linkedin_user_id: Optional[str] = None
+    linkedin_name: Optional[str] = None
+    linkedin_token_expires: Optional[str] = None
+    linkedin_client_id: Optional[str] = None
+    linkedin_client_secret_masked: Optional[str] = None  # Masked
+    linkedin_redirect_uri: Optional[str] = None
+    subscription: dict
+    usage: dict
+    created_at: datetime
+    updated_at: datetime
+
+    @classmethod
+    def from_settings(cls, settings: UserSettings) -> "UserSettingsResponse":
+        """Create a response model from settings, masking sensitive data"""
+        return cls(
+            id=settings.id,
+            user_id=settings.user_id,
+            ai_provider=settings.ai_provider,
+            ai_model=settings.ai_model,
+            api_key_masked=mask_sensitive_value(settings.api_key) if settings.api_key else None,
+            has_api_key=bool(settings.api_key),
+            use_emergent_key=settings.use_emergent_key,
+            linkedin_connected=settings.linkedin_connected,
+            linkedin_user_id=settings.linkedin_user_id,
+            linkedin_name=settings.linkedin_name,
+            linkedin_token_expires=settings.linkedin_token_expires,
+            linkedin_client_id=settings.linkedin_client_id,
+            linkedin_client_secret_masked=mask_sensitive_value(settings.linkedin_client_secret) if settings.linkedin_client_secret else None,
+            linkedin_redirect_uri=settings.linkedin_redirect_uri,
+            subscription=settings.subscription,
+            usage=settings.usage,
+            created_at=settings.created_at,
+            updated_at=settings.updated_at,
+        )
 
 # Inspiration URL Model
 class InspirationUrl(BaseModel):
@@ -406,23 +530,27 @@ async def sync_user(user_data: UserSync, user_id: RequiredUserId):
 
 # ============== Settings Routes ==============
 
-@api_router.get("/settings", response_model=UserSettings)
+@api_router.get("/settings", response_model=UserSettingsResponse)
 async def get_settings(user_id: RequiredUserId):
-    return await get_user_settings(user_id)
+    """Get user settings with sensitive data masked for security"""
+    settings = await get_user_settings(user_id)
+    return UserSettingsResponse.from_settings(settings)
 
-@api_router.put("/settings", response_model=UserSettings)
+@api_router.put("/settings", response_model=UserSettingsResponse)
 async def update_settings(update: UserSettingsUpdate, user_id: RequiredUserId):
+    """Update user settings. Sensitive fields can be updated but will be masked in response."""
     settings = await get_user_settings(user_id)
     update_data = update.model_dump(exclude_unset=True)
-    
+
     if update_data:
         update_data['updated_at'] = serialize_datetime(datetime.now(timezone.utc))
         await db.user_settings.update_one(
             {"user_id": user_id},
             {"$set": update_data}
         )
-    
-    return await get_user_settings(user_id)
+
+    updated_settings = await get_user_settings(user_id)
+    return UserSettingsResponse.from_settings(updated_settings)
 
 # ============== Posts Routes ==============
 
@@ -670,20 +798,47 @@ async def upload_knowledge_file(
     tags: str = Form("")
 ):
     """Upload a file to the knowledge vault"""
+    # Security: Validate filename exists
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Filename is required")
+
+    # Security: Validate file extension against whitelist
+    is_valid, ext_or_error = validate_file_extension(file.filename)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=ext_or_error)
+    file_ext = ext_or_error
+
+    # Security: Check file size before reading entire file into memory
+    # Read in chunks to enforce size limit
     file_id = str(uuid.uuid4())
-    file_ext = file.filename.split('.')[-1] if '.' in file.filename else 'txt'
     file_path = UPLOAD_DIR / f"{user_id}_{file_id}.{file_ext}"
-    
+
+    content = b""
+    total_size = 0
+    chunk_size = 64 * 1024  # 64KB chunks
+
+    while True:
+        chunk = await file.read(chunk_size)
+        if not chunk:
+            break
+        total_size += len(chunk)
+        if total_size > MAX_FILE_SIZE_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File too large. Maximum size is {MAX_FILE_SIZE_BYTES // (1024 * 1024)}MB"
+            )
+        content += chunk
+
+    # Write validated file
     async with aiofiles.open(file_path, 'wb') as f:
-        content = await file.read()
         await f.write(content)
-    
+
     text_content = ""
     if file_ext in ['txt', 'md']:
         text_content = content.decode('utf-8', errors='ignore')
     elif file_ext == 'pdf':
         text_content = f"[PDF file uploaded: {file.filename}]"
-    
+
     tag_list = [t.strip() for t in tags.split(',') if t.strip()]
     item = KnowledgeItem(
         user_id=user_id,
@@ -693,22 +848,35 @@ async def upload_knowledge_file(
         file_path=str(file_path),
         tags=tag_list
     )
-    
+
     doc = item.model_dump()
     doc['created_at'] = serialize_datetime(doc['created_at'])
     doc['updated_at'] = serialize_datetime(doc['updated_at'])
-    
+
     await db.knowledge_vault.insert_one(doc)
     return item
 
 @api_router.post("/knowledge/url")
 async def add_knowledge_from_url(url: str, title: str, user_id: RequiredUserId, tags: List[str] = []):
     """Add content from a URL to the knowledge vault"""
+    # SSRF Protection: Validate URL before fetching
+    is_safe, error_msg = is_safe_url(url)
+    if not is_safe:
+        raise HTTPException(status_code=400, detail=f"Invalid URL: {error_msg}")
+
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(follow_redirects=False) as client:
             response = await client.get(url, timeout=30.0)
+            # Check for redirects to internal IPs
+            if response.is_redirect:
+                redirect_url = str(response.headers.get('location', ''))
+                is_redirect_safe, _ = is_safe_url(redirect_url)
+                if not is_redirect_safe:
+                    raise HTTPException(status_code=400, detail="URL redirects to disallowed location")
             response.raise_for_status()
             content = response.text[:50000]
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to fetch URL: {str(e)}")
     
@@ -2040,12 +2208,23 @@ app.include_router(api_router)
 engagement_router = create_engagement_router(db, get_llm_chat, get_user_settings)
 app.include_router(engagement_router)
 
+# CORS Configuration - Security hardened
+# CORS_ORIGINS must be explicitly set in production (no wildcard with credentials)
+cors_origins_env = os.environ.get('CORS_ORIGINS', '')
+if cors_origins_env and cors_origins_env != '*':
+    cors_origins = [origin.strip() for origin in cors_origins_env.split(',') if origin.strip()]
+else:
+    # Default to empty list in production to prevent misuse
+    # Log warning if no origins configured
+    logger.warning("CORS_ORIGINS not configured - CORS will block cross-origin requests")
+    cors_origins = []
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=cors_origins,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
 )
 
 @app.on_event("shutdown")

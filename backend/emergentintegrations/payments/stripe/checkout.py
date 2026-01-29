@@ -38,6 +38,16 @@ class CheckoutStatusResponse:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
+@dataclass
+class WebhookResponse:
+    """Response from handling a webhook event"""
+    event_type: str
+    session_id: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    customer: Optional[str] = None
+    subscription: Optional[str] = None
+
+
 class StripeCheckout:
     """
     Stripe Checkout session manager.
@@ -137,35 +147,64 @@ class StripeCheckout:
             logger.error(f"Failed to get checkout status: {str(e)}")
             raise Exception(f"Failed to get checkout status: {str(e)}")
 
-    async def handle_webhook(self, body: bytes, signature: str) -> Dict[str, Any]:
+    async def handle_webhook(self, body: bytes, signature: str) -> WebhookResponse:
         """
-        Handle Stripe webhook events.
+        Handle Stripe webhook events with signature verification.
 
         Args:
             body: Raw request body
             signature: Stripe signature header
 
         Returns:
-            Dict with event type and data
+            WebhookResponse with event type, metadata, and session details
+
+        Raises:
+            Exception: If signature verification fails or webhook secret is not configured
         """
-        webhook_secret = None  # Set from environment if needed
+        import os
+        webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET")
+
+        if not webhook_secret:
+            logger.error("STRIPE_WEBHOOK_SECRET not configured - webhook processing disabled for security")
+            raise Exception("Webhook signature verification not configured")
 
         try:
-            if webhook_secret:
-                event = stripe.Webhook.construct_event(
-                    body, signature, webhook_secret
-                )
-            else:
-                # Parse without signature verification (for development)
-                import json
-                event = stripe.Event.construct_from(
-                    json.loads(body), stripe.api_key
-                )
+            # Always verify webhook signature in production
+            event = stripe.Webhook.construct_event(
+                body, signature, webhook_secret
+            )
 
-            return {
-                'type': event.type,
-                'data': event.data.object,
-            }
+            data_object = event.data.object
+
+            # Extract metadata from various event types
+            metadata = {}
+            session_id = None
+            customer = None
+            subscription = None
+
+            # For checkout.session events
+            if hasattr(data_object, 'metadata') and data_object.metadata:
+                metadata = dict(data_object.metadata)
+            if hasattr(data_object, 'id'):
+                session_id = data_object.id
+            if hasattr(data_object, 'customer'):
+                customer = data_object.customer if isinstance(data_object.customer, str) else getattr(data_object.customer, 'id', None)
+            if hasattr(data_object, 'subscription'):
+                subscription = data_object.subscription if isinstance(data_object.subscription, str) else getattr(data_object.subscription, 'id', None)
+
+            # For invoice/subscription events, metadata may be on subscription
+            if not metadata and hasattr(data_object, 'subscription_details') and data_object.subscription_details:
+                sub_metadata = getattr(data_object.subscription_details, 'metadata', None)
+                if sub_metadata:
+                    metadata = dict(sub_metadata)
+
+            return WebhookResponse(
+                event_type=event.type,
+                session_id=session_id,
+                metadata=metadata,
+                customer=customer,
+                subscription=subscription,
+            )
 
         except ValueError as e:
             logger.error(f"Invalid webhook payload: {str(e)}")
