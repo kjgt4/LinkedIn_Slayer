@@ -15,7 +15,10 @@ import re
 import aiofiles
 import httpx
 import ipaddress
-from urllib.parse import urlparse
+import hmac
+import hashlib
+import secrets
+from urllib.parse import urlparse, quote, unquote
 from auth import OptionalUserId, RequiredUserId, ClerkAuthError
 from engagement_hub import create_engagement_router
 from subscription import (
@@ -148,6 +151,71 @@ def mask_sensitive_value(value: Optional[str], visible_chars: int = 4) -> Option
     if len(value) <= visible_chars:
         return '*' * len(value)
     return '*' * (len(value) - visible_chars) + value[-visible_chars:]
+
+# ============== OAuth State Security ==============
+
+# Secret key for signing OAuth state parameters
+# In production, this should be a persistent secret from environment
+OAUTH_STATE_SECRET = os.environ.get('OAUTH_STATE_SECRET', secrets.token_hex(32))
+
+def create_signed_oauth_state(user_id: str) -> str:
+    """
+    Create a cryptographically signed OAuth state parameter.
+    Format: user_id:nonce:timestamp:signature
+    """
+    nonce = secrets.token_hex(16)
+    timestamp = str(int(datetime.now(timezone.utc).timestamp()))
+    data = f"{user_id}:{nonce}:{timestamp}"
+
+    # Create HMAC signature
+    signature = hmac.new(
+        OAUTH_STATE_SECRET.encode(),
+        data.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+    state = f"{data}:{signature}"
+    return quote(state, safe='')
+
+def verify_signed_oauth_state(state: str, max_age_seconds: int = 600) -> tuple[bool, Optional[str], str]:
+    """
+    Verify a signed OAuth state parameter.
+    Returns (is_valid, user_id, error_message).
+    State expires after max_age_seconds (default 10 minutes).
+    """
+    try:
+        state = unquote(state)
+        parts = state.split(':')
+        if len(parts) != 4:
+            return False, None, "Invalid state format"
+
+        user_id, nonce, timestamp_str, signature = parts
+        data = f"{user_id}:{nonce}:{timestamp_str}"
+
+        # Verify signature using constant-time comparison
+        expected_signature = hmac.new(
+            OAUTH_STATE_SECRET.encode(),
+            data.encode(),
+            hashlib.sha256
+        ).hexdigest()
+
+        if not hmac.compare_digest(signature, expected_signature):
+            return False, None, "Invalid state signature"
+
+        # Check timestamp (prevent replay attacks)
+        try:
+            timestamp = int(timestamp_str)
+            current_time = int(datetime.now(timezone.utc).timestamp())
+            if current_time - timestamp > max_age_seconds:
+                return False, None, "State has expired"
+        except ValueError:
+            return False, None, "Invalid timestamp"
+
+        return True, user_id, ""
+
+    except Exception as e:
+        logger.error(f"OAuth state verification failed: {str(e)}")
+        return False, None, "State verification failed"
 
 # ============== Models ==============
 
@@ -1042,18 +1110,33 @@ async def save_inspiration_to_vault(url_id: str, user_id: RequiredUserId):
     
     url = url_doc.get("url")
     title = url_doc.get("title") or f"Inspiration: {url[:50]}..."
-    
+
+    # SSRF Protection: Validate URL before fetching
+    is_safe, error_msg = is_safe_url(url)
+    if not is_safe:
+        raise HTTPException(status_code=400, detail=f"Invalid URL: {error_msg}")
+
     existing = await db.knowledge_vault.find_one({"source_url": url, "user_id": user_id}, {"_id": 0})
     if existing:
         return {"message": "URL already in Knowledge Vault", "item": KnowledgeItem(**deserialize_datetime(existing))}
-    
+
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url, timeout=30.0, follow_redirects=True)
+        async with httpx.AsyncClient(follow_redirects=False) as client:
+            response = await client.get(url, timeout=30.0)
+            # Check for redirects to internal IPs
+            if response.is_redirect:
+                redirect_url = str(response.headers.get('location', ''))
+                is_redirect_safe, _ = is_safe_url(redirect_url)
+                if not is_redirect_safe:
+                    raise HTTPException(status_code=400, detail="URL redirects to disallowed location")
+                # Follow safe redirect manually
+                response = await client.get(redirect_url, timeout=30.0)
             response.raise_for_status()
             content = response.text[:50000]
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Failed to fetch inspiration URL {url}: {str(e)}")
+        logger.error(f"Failed to fetch inspiration URL: {str(e)}")
         raise HTTPException(status_code=400, detail="Failed to fetch URL. Please check the URL and try again.")
     
     item = KnowledgeItem(
@@ -1307,9 +1390,21 @@ async def suggest_topics(user_id: RequiredUserId, context: Optional[str] = None,
     
     inspiration_content = ""
     if inspiration_url:
+        # SSRF Protection: Validate URL before fetching
+        is_safe, error_msg = is_safe_url(inspiration_url)
+        if not is_safe:
+            raise HTTPException(status_code=400, detail=f"Invalid inspiration URL: {error_msg}")
+
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(inspiration_url, timeout=15.0, follow_redirects=True)
+            async with httpx.AsyncClient(follow_redirects=False) as client:
+                response = await client.get(inspiration_url, timeout=15.0)
+                # Check for redirects to internal IPs
+                if response.is_redirect:
+                    redirect_url = str(response.headers.get('location', ''))
+                    is_redirect_safe, _ = is_safe_url(redirect_url)
+                    if not is_redirect_safe:
+                        raise HTTPException(status_code=400, detail="URL redirects to disallowed location")
+                    response = await client.get(redirect_url, timeout=15.0)
                 response.raise_for_status()
                 raw_content = response.text[:15000]
                 import re as regex
@@ -1318,6 +1413,8 @@ async def suggest_topics(user_id: RequiredUserId, context: Optional[str] = None,
                 raw_content = regex.sub(r'<[^>]+>', ' ', raw_content)
                 raw_content = regex.sub(r'\s+', ' ', raw_content).strip()
                 inspiration_content = f"\n\nINSPIRATION CONTENT from {inspiration_url}:\n{raw_content[:8000]}\n\nUse this content as inspiration to generate topic ideas that align with and relate to this material."
+        except HTTPException:
+            raise
         except Exception as e:
             logger.warning(f"Failed to fetch inspiration URL: {str(e)}")
     
@@ -1480,18 +1577,19 @@ async def get_linkedin_credentials(user_id: str):
 
 @api_router.get("/linkedin/auth")
 async def get_linkedin_auth_url(user_id: RequiredUserId):
-    """Generate LinkedIn OAuth authorization URL"""
+    """Generate LinkedIn OAuth authorization URL with cryptographically signed state"""
     client_id, client_secret, redirect_uri = await get_linkedin_credentials(user_id)
-    
+
     if not client_id:
         raise HTTPException(status_code=400, detail="LinkedIn Client ID not configured. Please add your LinkedIn API credentials in Settings.")
-    
+
     if not redirect_uri:
         raise HTTPException(status_code=400, detail="LinkedIn Redirect URI not configured. Please add it in Settings.")
-    
+
     scopes = "r_emailaddress profile w_member_social openid"
-    state = f"{user_id}:{uuid.uuid4()}"
-    
+    # Create cryptographically signed state to prevent CSRF and state tampering
+    state = create_signed_oauth_state(user_id)
+
     auth_url = (
         f"https://www.linkedin.com/oauth/v2/authorization?"
         f"response_type=code&"
@@ -1500,20 +1598,21 @@ async def get_linkedin_auth_url(user_id: RequiredUserId):
         f"scope={scopes}&"
         f"state={state}"
     )
-    
+
     return {"auth_url": auth_url, "state": state}
 
 @api_router.get("/linkedin/callback")
 async def linkedin_callback(code: str, state: Optional[str] = None):
     """Handle LinkedIn OAuth callback and exchange code for access token"""
-    # Extract user_id from state
-    user_id = None
-    if state and ":" in state:
-        user_id = state.split(":")[0]
-    
-    if not user_id:
-        raise HTTPException(status_code=400, detail="Invalid state parameter")
-    
+    # Verify cryptographically signed state to prevent CSRF attacks
+    if not state:
+        raise HTTPException(status_code=400, detail="Missing state parameter")
+
+    is_valid, user_id, error_msg = verify_signed_oauth_state(state)
+    if not is_valid:
+        logger.warning(f"OAuth state verification failed: {error_msg}")
+        raise HTTPException(status_code=400, detail="Invalid or expired authorization. Please try again.")
+
     client_id, client_secret, redirect_uri = await get_linkedin_credentials(user_id)
     
     if not client_id or not client_secret:
