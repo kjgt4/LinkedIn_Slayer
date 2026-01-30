@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Loader2, Save, Cpu, Check, Linkedin, Link2, Unlink, Settings2, ExternalLink, CreditCard, Crown, Calendar, AlertCircle } from 'lucide-react';
+import { Loader2, Save, Cpu, Check, Linkedin, Link2, Unlink, Settings2, ExternalLink, CreditCard, Crown, Calendar, AlertCircle, Eye, EyeOff, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -69,6 +69,8 @@ export default function Settings() {
   const [connectingLinkedIn, setConnectingLinkedIn] = useState(false);
   const [linkedInConfigOpen, setLinkedInConfigOpen] = useState(false);
   const [cancellingSubscription, setCancellingSubscription] = useState(false);
+  const [apiKeyError, setApiKeyError] = useState('');
+  const [showApiKey, setShowApiKey] = useState(false);
   const [settings, setSettings] = useState({
     ai_provider: 'anthropic',
     ai_model: 'claude-sonnet-4-5-20250929',
@@ -150,7 +152,27 @@ export default function Settings() {
     }
   };
 
+  const validateApiKey = (key) => {
+    if (!key || key.trim() === '') {
+      return 'API key is required to use AI features';
+    }
+    // API keys are typically 40+ characters
+    if (key.trim().length < 20) {
+      return 'API key appears too short. Please check your key.';
+    }
+    return '';
+  };
+
   const handleSave = async () => {
+    // Validate API key
+    const keyError = validateApiKey(settings.api_key);
+    if (keyError) {
+      setApiKeyError(keyError);
+      toast.error(keyError);
+      return;
+    }
+    setApiKeyError('');
+
     setSaving(true);
     try {
       await updateSettings({
@@ -596,17 +618,57 @@ export default function Settings() {
         <div className="space-y-2">
           <Label className="text-neutral-400 text-xs uppercase tracking-wider">
             {settings.ai_provider === 'anthropic' ? 'Anthropic' :
-             settings.ai_provider === 'openai' ? 'OpenAI' : 'Google'} API Key
+             settings.ai_provider === 'openai' ? 'OpenAI' : 'Google'} API Key *
           </Label>
-          <Input
-            type="password"
-            value={settings.api_key}
-            onChange={(e) => setSettings(prev => ({ ...prev, api_key: e.target.value }))}
-            placeholder="Enter your API key..."
-            data-testid="api-key-input"
-            className="bg-black/30 border-white/10 focus:border-electric-blue font-mono"
-          />
-          <p className="text-xs text-neutral-500">
+          <div className="relative">
+            <Input
+              type={showApiKey ? 'text' : 'password'}
+              value={settings.api_key}
+              onChange={(e) => {
+                setSettings(prev => ({ ...prev, api_key: e.target.value }));
+                if (apiKeyError) setApiKeyError('');
+              }}
+              placeholder="Enter your API key..."
+              data-testid="api-key-input"
+              className={cn(
+                "bg-black/30 border-white/10 focus:border-electric-blue font-mono pr-20",
+                apiKeyError && "border-red-500"
+              )}
+              aria-invalid={!!apiKeyError}
+              aria-describedby={apiKeyError ? "api-key-error" : "api-key-help"}
+            />
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-neutral-400 hover:text-white"
+                onClick={() => setShowApiKey(!showApiKey)}
+                aria-label={showApiKey ? 'Hide API key' : 'Show API key'}
+              >
+                {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+              {settings.api_key && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-neutral-400 hover:text-white"
+                  onClick={() => {
+                    navigator.clipboard.writeText(settings.api_key);
+                    toast.success('API key copied to clipboard');
+                  }}
+                  aria-label="Copy API key"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+          {apiKeyError && (
+            <p id="api-key-error" className="text-xs text-red-400">{apiKeyError}</p>
+          )}
+          <p id="api-key-help" className="text-xs text-neutral-500">
             {settings.ai_provider === 'anthropic' && 'Get your key at console.anthropic.com'}
             {settings.ai_provider === 'openai' && 'Get your key at platform.openai.com'}
             {settings.ai_provider === 'gemini' && 'Get your key at ai.google.dev'}

@@ -68,6 +68,7 @@ export default function CalendarView() {
             onClick={() => setWeekOffset(prev => prev - 1)}
             data-testid="calendar-prev-week-btn"
             className="text-neutral-400 hover:text-white"
+            aria-label="Previous week"
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>
@@ -80,6 +81,7 @@ export default function CalendarView() {
             onClick={() => setWeekOffset(prev => prev + 1)}
             data-testid="calendar-next-week-btn"
             className="text-neutral-400 hover:text-white"
+            aria-label="Next week"
           >
             <ChevronRight className="w-5 h-5" />
           </Button>

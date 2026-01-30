@@ -277,7 +277,7 @@ export default function KnowledgeVault() {
                 Add Note
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-charcoal border-white/10 max-w-2xl">
+            <DialogContent className="bg-charcoal border-white/10 w-[95vw] max-w-2xl">
               <DialogHeader>
                 <DialogTitle className="text-white">Add Knowledge Item</DialogTitle>
                 <DialogDescription className="text-neutral-400">

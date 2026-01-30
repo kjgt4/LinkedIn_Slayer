@@ -296,6 +296,7 @@ export default function Editor() {
             onClick={() => navigate('/')}
             data-testid="editor-back-btn"
             className="text-neutral-400 hover:text-white"
+            aria-label="Go back to dashboard"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
@@ -564,6 +565,8 @@ export default function Editor() {
                   onClick={() => setPreviewMode('mobile')}
                   data-testid="preview-mobile-btn"
                   className={previewMode === 'mobile' ? 'bg-electric-blue' : 'text-neutral-400'}
+                  aria-label="Mobile preview"
+                  aria-pressed={previewMode === 'mobile'}
                 >
                   <Smartphone className="w-4 h-4" />
                 </Button>
@@ -573,6 +576,8 @@ export default function Editor() {
                   onClick={() => setPreviewMode('desktop')}
                   data-testid="preview-desktop-btn"
                   className={previewMode === 'desktop' ? 'bg-electric-blue' : 'text-neutral-400'}
+                  aria-label="Desktop preview"
+                  aria-pressed={previewMode === 'desktop'}
                 >
                   <Monitor className="w-4 h-4" />
                 </Button>

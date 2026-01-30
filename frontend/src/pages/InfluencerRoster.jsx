@@ -290,6 +290,14 @@ export default function InfluencerRoster() {
   );
 }
 
+// LinkedIn URL validation helper
+const isValidLinkedInUrl = (url) => {
+  if (!url) return false;
+  // Match linkedin.com/in/username or linkedin.com/company/name patterns
+  const linkedInPattern = /^https?:\/\/(www\.)?linkedin\.com\/(in|company)\/[\w-]+\/?$/i;
+  return linkedInPattern.test(url);
+};
+
 // Add Influencer Dialog Component
 function AddInfluencerDialog({ open, onOpenChange, influencer, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -303,6 +311,7 @@ function AddInfluencerDialog({ open, onOpenChange, influencer, onSuccess }) {
     notes: '',
   });
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (influencer) {
@@ -328,12 +337,26 @@ function AddInfluencerDialog({ open, onOpenChange, influencer, onSuccess }) {
         notes: '',
       });
     }
+    setErrors({});
   }, [influencer, open]);
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    }
+    if (!formData.linkedin_url.trim()) {
+      newErrors.linkedin_url = 'LinkedIn URL is required';
+    } else if (!isValidLinkedInUrl(formData.linkedin_url)) {
+      newErrors.linkedin_url = 'Please enter a valid LinkedIn profile URL (e.g., https://linkedin.com/in/username)';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.linkedin_url) {
-      toast.error('Name and LinkedIn URL are required');
+    if (!validateForm()) {
       return;
     }
 
@@ -378,21 +401,37 @@ function AddInfluencerDialog({ open, onOpenChange, influencer, onSuccess }) {
             <Label>Name *</Label>
             <Input
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, name: e.target.value });
+                if (errors.name) setErrors({ ...errors, name: null });
+              }}
               placeholder="John Smith"
-              className="bg-obsidian border-white/10"
+              className={cn("bg-obsidian border-white/10", errors.name && "border-red-500")}
               data-testid="influencer-name-input"
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? "name-error" : undefined}
             />
+            {errors.name && (
+              <p id="name-error" className="text-xs text-red-400 mt-1">{errors.name}</p>
+            )}
           </div>
           <div>
             <Label>LinkedIn Profile URL *</Label>
             <Input
               value={formData.linkedin_url}
-              onChange={(e) => setFormData({ ...formData, linkedin_url: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, linkedin_url: e.target.value });
+                if (errors.linkedin_url) setErrors({ ...errors, linkedin_url: null });
+              }}
               placeholder="https://linkedin.com/in/johnsmith"
-              className="bg-obsidian border-white/10"
+              className={cn("bg-obsidian border-white/10", errors.linkedin_url && "border-red-500")}
               data-testid="influencer-url-input"
+              aria-invalid={!!errors.linkedin_url}
+              aria-describedby={errors.linkedin_url ? "url-error" : undefined}
             />
+            {errors.linkedin_url && (
+              <p id="url-error" className="text-xs text-red-400 mt-1">{errors.linkedin_url}</p>
+            )}
           </div>
           <div>
             <Label>Headline</Label>
@@ -509,7 +548,7 @@ function DiscoveryAssistantDialog({ open, onOpenChange, onAddInfluencer }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl bg-charcoal border-white/10 max-h-[80vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-2xl bg-charcoal border-white/10 max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-purple-400" />

@@ -421,7 +421,7 @@ function CommentDraftingDialog({ open, onOpenChange, post, onSuccess }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl bg-charcoal border-white/10 max-h-[85vh] overflow-hidden">
+      <DialogContent className="w-[95vw] max-w-4xl bg-charcoal border-white/10 max-h-[85vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle>Draft Engagement Comment</DialogTitle>
           <DialogDescription>AI-generated comment variations for {post?.influencer_name}</DialogDescription>

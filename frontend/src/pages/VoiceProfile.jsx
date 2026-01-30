@@ -260,7 +260,7 @@ export default function VoiceProfilePage() {
                 Analyze My Writing
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-charcoal border-white/10 max-w-2xl">
+            <DialogContent className="bg-charcoal border-white/10 w-[95vw] max-w-2xl">
               <DialogHeader>
                 <DialogTitle className="text-white">Analyze Your Writing Style</DialogTitle>
                 <DialogDescription className="text-neutral-400">
@@ -312,7 +312,7 @@ export default function VoiceProfilePage() {
                 Create Profile
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-charcoal border-white/10 max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="bg-charcoal border-white/10 w-[95vw] max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="text-white">
                   {editingProfile ? 'Edit Voice Profile' : 'Create Voice Profile'}
