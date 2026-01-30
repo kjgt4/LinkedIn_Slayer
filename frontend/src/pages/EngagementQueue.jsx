@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { MessageCircle, Clock, ExternalLink, Check, X, Sparkles, Copy, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import EmptyState from '@/components/EmptyState';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -132,14 +133,16 @@ export default function EngagementQueue() {
       {loading ? (
         <div className="text-center py-12 text-slate-400">Loading queue...</div>
       ) : queue.length === 0 ? (
-        <div className="text-center py-12 bg-charcoal/50 rounded-lg border border-white/10">
-          <MessageCircle className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-white mb-2">No posts in queue</h3>
-          <p className="text-slate-400 mb-4">Add posts from influencers to start engaging</p>
-          <Button onClick={() => setShowAddDialog(true)} className="bg-electric-blue">
-            Add Post to Track
-          </Button>
-        </div>
+        <EmptyState
+          icon={MessageCircle}
+          title="No posts in queue"
+          description="Add posts from influencers to start engaging and build relationships"
+          action={
+            <Button onClick={() => setShowAddDialog(true)} className="bg-electric-blue">
+              Add Post to Track
+            </Button>
+          }
+        />
       ) : (
         <div className="space-y-8">
           {/* New Posts */}

@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { 
-  Upload, Link, FileText, Trash2, Sparkles, Loader2, Plus, 
+import {
+  Upload, Link, FileText, Trash2, Sparkles, Loader2, Plus,
   File, Globe, Mic, BookOpen, FolderOpen, Search, Tag
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import EmptyState from '@/components/EmptyState';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -376,13 +377,17 @@ export default function KnowledgeVault() {
           <Loader2 className="w-8 h-8 animate-spin text-electric-blue" />
         </div>
       ) : filteredItems.length === 0 ? (
-        <div className="text-center py-20 card-surface">
-          <FolderOpen className="w-12 h-12 text-neutral-600 mx-auto mb-4" />
-          <p className="text-neutral-400">No knowledge items found</p>
-          <Button onClick={() => setDialogOpen(true)} className="mt-4 btn-primary">
-            Add your first item
-          </Button>
-        </div>
+        <EmptyState
+          icon={FolderOpen}
+          title="No knowledge items found"
+          description="Add expertise, SOPs, transcripts, or notes to power your AI content"
+          action={
+            <Button onClick={() => setDialogOpen(true)} className="btn-primary">
+              Add your first item
+            </Button>
+          }
+          className="py-20"
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredItems.map((item) => {

@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { 
+import {
   Loader2, Save, Copy, Wand2, ArrowLeft, Check, Smartphone, Monitor,
-  Calendar, Clock, Send, Linkedin
+  Calendar, Clock, Send, Linkedin, Eye, EyeOff
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -52,6 +52,7 @@ export default function Editor() {
   const [publishingToLinkedIn, setPublishingToLinkedIn] = useState(false);
   const [copied, setCopied] = useState(false);
   const [previewMode, setPreviewMode] = useState('mobile');
+  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
 
@@ -553,11 +554,39 @@ export default function Editor() {
           </div>
         </div>
 
-        {/* Preview Pane */}
-        <div className="hidden lg:block lg:col-span-4 bg-neutral-900/50 p-6 overflow-y-auto">
+        {/* Mobile Preview Toggle Button */}
+        <Button
+          onClick={() => setMobilePreviewOpen(!mobilePreviewOpen)}
+          className="lg:hidden fixed bottom-6 right-6 z-50 rounded-full w-14 h-14 bg-electric-blue shadow-lg shadow-electric-blue/30"
+          aria-label={mobilePreviewOpen ? 'Hide preview' : 'Show preview'}
+        >
+          {mobilePreviewOpen ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
+        </Button>
+
+        {/* Preview Pane - visible on desktop, or on mobile when toggled */}
+        <div className={cn(
+          "lg:col-span-4 bg-neutral-900/50 p-6 overflow-y-auto",
+          mobilePreviewOpen
+            ? "fixed inset-0 z-40 lg:relative lg:inset-auto pt-20 lg:pt-6"
+            : "hidden lg:block"
+        )}>
           <div className="sticky top-0">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="font-heading text-sm font-semibold uppercase tracking-wider text-neutral-400">Preview</h3>
+              <div className="flex items-center gap-3">
+                {/* Close button - only on mobile */}
+                {mobilePreviewOpen && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setMobilePreviewOpen(false)}
+                    className="lg:hidden text-neutral-400 hover:text-white"
+                    aria-label="Close preview"
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                  </Button>
+                )}
+                <h3 className="font-heading text-sm font-semibold uppercase tracking-wider text-neutral-400">Preview</h3>
+              </div>
               <div className="flex gap-2">
                 <Button
                   variant={previewMode === 'mobile' ? 'default' : 'ghost'}

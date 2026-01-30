@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Loader2, FileText, Trash2, Calendar, Edit3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import EmptyState from '@/components/EmptyState';
 import { getPosts, deletePost } from '@/lib/api';
 import { PILLARS, FRAMEWORKS, formatDate } from '@/lib/utils';
 import { cn } from '@/lib/utils';
@@ -88,20 +90,41 @@ export default function Library() {
 
       {/* Posts List */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-electric-blue" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="card-surface p-5">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex gap-2">
+                  <Skeleton className="h-5 w-16 rounded bg-white/10" />
+                  <Skeleton className="h-5 w-14 rounded bg-white/10" />
+                </div>
+                <Skeleton className="h-5 w-16 rounded bg-white/5" />
+              </div>
+              <Skeleton className="h-5 w-full mb-2 bg-white/10" />
+              <Skeleton className="h-4 w-full mb-1 bg-white/5" />
+              <Skeleton className="h-4 w-3/4 mb-4 bg-white/5" />
+              <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                <Skeleton className="h-4 w-24 bg-white/5" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-8 w-8 rounded bg-white/5" />
+                  <Skeleton className="h-8 w-8 rounded bg-white/5" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : posts.length === 0 ? (
-        <div className="text-center py-20 card-surface">
-          <FileText className="w-12 h-12 text-neutral-600 mx-auto mb-4" />
-          <p className="text-neutral-400">No posts found</p>
-          <Button
-            onClick={() => navigate('/editor')}
-            className="mt-4 btn-primary"
-          >
-            Create your first post
-          </Button>
-        </div>
+        <EmptyState
+          icon={FileText}
+          title="No posts found"
+          description="Start creating content to build your library"
+          action={
+            <Button onClick={() => navigate('/editor')} className="btn-primary">
+              Create your first post
+            </Button>
+          }
+          className="py-20"
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {posts.map((post) => (

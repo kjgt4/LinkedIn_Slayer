@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { 
-  BarChart3, TrendingUp, Target, DollarSign, Award, 
+import {
+  BarChart3, TrendingUp, Target, DollarSign, Award,
   Loader2, RefreshCw, Lightbulb, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { getPerformanceMetrics, getPillarRecommendation } from '@/lib/api';
 import { PILLARS, FRAMEWORKS } from '@/lib/utils';
 import { cn } from '@/lib/utils';
@@ -36,8 +37,44 @@ export default function Analytics() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-electric-blue" />
+      <div className="p-8 space-y-8">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-10 w-72 bg-white/10" />
+            <Skeleton className="h-5 w-96 mt-2 bg-white/5" />
+          </div>
+          <Skeleton className="h-10 w-24 bg-white/10" />
+        </div>
+
+        {/* Stats Grid Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="card-surface p-6">
+              <div className="flex items-center gap-4">
+                <Skeleton className="w-12 h-12 rounded-lg bg-white/10" />
+                <div className="flex-1">
+                  <Skeleton className="h-3 w-20 bg-white/5" />
+                  <Skeleton className="h-8 w-16 mt-2 bg-white/10" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Pillar Performance Skeleton */}
+        <div className="card-surface p-6">
+          <Skeleton className="h-6 w-48 mb-6 bg-white/10" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="p-4 rounded-lg bg-white/5">
+                <Skeleton className="h-5 w-24 bg-white/10" />
+                <Skeleton className="h-4 w-32 mt-2 bg-white/5" />
+                <Skeleton className="h-8 w-20 mt-3 bg-white/10" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

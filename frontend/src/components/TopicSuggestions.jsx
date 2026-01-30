@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Sparkles, RefreshCw, ArrowRight, Link, Loader2, Star, History, Database, ChevronDown, X } from 'lucide-react';
 import { suggestTopics, getInspirationUrls, saveInspirationUrl, toggleFavoriteUrl, deleteInspirationUrl, saveInspirationToVault } from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
@@ -304,9 +305,18 @@ export default function TopicSuggestions({ onSelect }) {
       {/* Suggestions List */}
       <div className="space-y-3">
         {loading && suggestions.length === 0 ? (
-          <div className="py-8 text-center">
-            <Loader2 className="w-6 h-6 animate-spin text-electric-blue mx-auto mb-2" />
-            <p className="text-sm text-neutral-500">
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="p-4 card-surface">
+                <Skeleton className="h-5 w-full mb-2 bg-white/10" />
+                <Skeleton className="h-4 w-2/3 mb-3 bg-white/5" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-5 w-16 rounded bg-white/10" />
+                  <Skeleton className="h-5 w-14 rounded bg-white/10" />
+                </div>
+              </div>
+            ))}
+            <p className="text-xs text-neutral-500 text-center pt-2">
               {inspirationUrl ? 'Analyzing content...' : 'Generating ideas...'}
             </p>
           </div>
