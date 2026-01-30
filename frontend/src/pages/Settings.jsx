@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Loader2, Save, Key, Cpu, Check, Linkedin, Link2, Unlink, Settings2, ExternalLink, CreditCard, Crown, Calendar, AlertCircle } from 'lucide-react';
+import { Loader2, Save, Cpu, Check, Linkedin, Link2, Unlink, Settings2, ExternalLink, CreditCard, Crown, Calendar, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -74,7 +73,7 @@ export default function Settings() {
     ai_provider: 'anthropic',
     ai_model: 'claude-sonnet-4-5-20250929',
     api_key: '',
-    use_emergent_key: true,
+    use_emergent_key: false,
     linkedin_connected: false,
     linkedin_name: '',
     linkedin_client_id: '',
@@ -550,24 +549,6 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* Emergent Key Toggle */}
-        <div className="flex items-center justify-between p-4 rounded-lg bg-electric-blue/10 border border-electric-blue/30">
-          <div className="flex items-center gap-3">
-            <Key className="w-5 h-5 text-electric-blue" />
-            <div>
-              <Label className="text-white font-medium">Use Emergent Universal Key</Label>
-              <p className="text-xs text-neutral-400 mt-1">
-                No API key needed. Credits deducted from your Emergent balance.
-              </p>
-            </div>
-          </div>
-          <Switch
-            checked={settings.use_emergent_key}
-            onCheckedChange={(checked) => setSettings(prev => ({ ...prev, use_emergent_key: checked }))}
-            data-testid="use-emergent-key-toggle"
-          />
-        </div>
-
         {/* Provider Selection */}
         <div className="space-y-2">
           <Label className="text-neutral-400 text-xs uppercase tracking-wider">AI Provider</Label>
@@ -611,28 +592,26 @@ export default function Settings() {
           </Select>
         </div>
 
-        {/* Custom API Key */}
-        {!settings.use_emergent_key && (
-          <div className="space-y-2">
-            <Label className="text-neutral-400 text-xs uppercase tracking-wider">
-              {settings.ai_provider === 'anthropic' ? 'Anthropic' :
-               settings.ai_provider === 'openai' ? 'OpenAI' : 'Google'} API Key
-            </Label>
-            <Input
-              type="password"
-              value={settings.api_key}
-              onChange={(e) => setSettings(prev => ({ ...prev, api_key: e.target.value }))}
-              placeholder="Enter your API key..."
-              data-testid="api-key-input"
-              className="bg-black/30 border-white/10 focus:border-electric-blue font-mono"
-            />
-            <p className="text-xs text-neutral-500">
-              {settings.ai_provider === 'anthropic' && 'Get your key at console.anthropic.com'}
-              {settings.ai_provider === 'openai' && 'Get your key at platform.openai.com'}
-              {settings.ai_provider === 'gemini' && 'Get your key at ai.google.dev'}
-            </p>
-          </div>
-        )}
+        {/* API Key */}
+        <div className="space-y-2">
+          <Label className="text-neutral-400 text-xs uppercase tracking-wider">
+            {settings.ai_provider === 'anthropic' ? 'Anthropic' :
+             settings.ai_provider === 'openai' ? 'OpenAI' : 'Google'} API Key
+          </Label>
+          <Input
+            type="password"
+            value={settings.api_key}
+            onChange={(e) => setSettings(prev => ({ ...prev, api_key: e.target.value }))}
+            placeholder="Enter your API key..."
+            data-testid="api-key-input"
+            className="bg-black/30 border-white/10 focus:border-electric-blue font-mono"
+          />
+          <p className="text-xs text-neutral-500">
+            {settings.ai_provider === 'anthropic' && 'Get your key at console.anthropic.com'}
+            {settings.ai_provider === 'openai' && 'Get your key at platform.openai.com'}
+            {settings.ai_provider === 'gemini' && 'Get your key at ai.google.dev'}
+          </p>
+        </div>
       </div>
 
       {/* Save Button */}

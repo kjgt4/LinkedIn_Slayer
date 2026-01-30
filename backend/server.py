@@ -176,7 +176,7 @@ class UserSettings(BaseModel):
     ai_provider: Literal["anthropic", "openai", "gemini"] = "anthropic"
     ai_model: str = "claude-sonnet-4-5-20250929"
     api_key: Optional[str] = None
-    use_emergent_key: bool = True
+    use_emergent_key: bool = False  # Deprecated - users must provide their own API key
     # LinkedIn Integration
     linkedin_connected: bool = False
     linkedin_access_token: Optional[str] = None
@@ -463,14 +463,11 @@ async def get_user_settings(user_id: str):
 async def get_llm_chat(user_id: str, session_id: str, system_message: str):
     """Initialize LLM chat with user's configured provider"""
     settings = await get_user_settings(user_id)
-    
-    if settings.use_emergent_key:
-        api_key = os.environ.get('EMERGENT_LLM_KEY')
-    else:
-        api_key = settings.api_key
-    
+
+    api_key = settings.api_key
+
     if not api_key:
-        raise HTTPException(status_code=400, detail="No API key configured. Please set your API key in settings or enable Emergent Key.")
+        raise HTTPException(status_code=400, detail="No API key configured. Please add your API key in Settings to use AI features.")
     
     chat = LlmChat(
         api_key=api_key,
