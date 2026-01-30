@@ -31,7 +31,7 @@ import {
 import { getSettings, updateSettings, getLinkedInAuthUrl, disconnectLinkedIn, subscriptionAPI } from '@/lib/api';
 import { useSubscription } from '@/hooks/useSubscription';
 import { UsageDashboard, GracePeriodBanner } from '@/components/subscription';
-import { cn } from '@/lib/utils';
+import { cn, getErrorMessage } from '@/lib/utils';
 
 const PROVIDERS = [
   { value: 'anthropic', label: 'Anthropic (Claude)', icon: '🟣' },
@@ -186,7 +186,7 @@ export default function Settings() {
       });
       toast.success('Settings saved');
     } catch (error) {
-      toast.error('Failed to save settings');
+      toast.error(getErrorMessage(error, 'Failed to save settings'));
     } finally {
       setSaving(false);
     }
@@ -217,11 +217,12 @@ export default function Settings() {
       const response = await getLinkedInAuthUrl();
       window.location.href = response.data.auth_url;
     } catch (error) {
-      if (error.response?.data?.detail?.includes('not configured')) {
+      const message = getErrorMessage(error, 'Failed to connect LinkedIn');
+      if (message.includes('not configured')) {
         toast.error('Please configure LinkedIn API credentials first');
         setLinkedInConfigOpen(true);
       } else {
-        toast.error('Failed to connect LinkedIn');
+        toast.error(message);
       }
       setConnectingLinkedIn(false);
     }
@@ -237,7 +238,7 @@ export default function Settings() {
       }));
       toast.success('LinkedIn disconnected');
     } catch (error) {
-      toast.error('Failed to disconnect LinkedIn');
+      toast.error(getErrorMessage(error, 'Failed to disconnect LinkedIn'));
     }
   };
 
@@ -248,7 +249,7 @@ export default function Settings() {
       toast.success('Subscription will be cancelled at the end of the billing period');
       refreshSubscription();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to cancel subscription');
+      toast.error(getErrorMessage(error, 'Failed to cancel subscription'));
     } finally {
       setCancellingSubscription(false);
     }
@@ -260,7 +261,7 @@ export default function Settings() {
       toast.success('Subscription reactivated!');
       refreshSubscription();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to reactivate subscription');
+      toast.error(getErrorMessage(error, 'Failed to reactivate subscription'));
     }
   };
 

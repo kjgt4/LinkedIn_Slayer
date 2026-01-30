@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import EmptyState from '@/components/EmptyState';
 import { getPosts, deletePost } from '@/lib/api';
-import { PILLARS, FRAMEWORKS, formatDate } from '@/lib/utils';
+import { PILLARS, FRAMEWORKS, formatDate, getErrorMessage } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import {
   AlertDialog,
@@ -33,7 +33,7 @@ export default function Library() {
       const response = await getPosts(status);
       setPosts(response.data);
     } catch (error) {
-      toast.error('Failed to load posts');
+      toast.error(getErrorMessage(error, 'Failed to load posts'));
     } finally {
       setLoading(false);
     }
@@ -49,7 +49,7 @@ export default function Library() {
       setPosts(prev => prev.filter(p => p.id !== id));
       toast.success('Post deleted');
     } catch (error) {
-      toast.error('Failed to delete post');
+      toast.error(getErrorMessage(error, 'Failed to delete post'));
     }
   };
 

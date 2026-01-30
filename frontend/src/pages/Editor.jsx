@@ -2,10 +2,18 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Loader2, Save, Copy, Wand2, ArrowLeft, Check, Smartphone, Monitor,
-  Calendar, Clock, Send, Linkedin, Eye, EyeOff
+  Calendar, Clock, Send, Linkedin, Eye, EyeOff, Home
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -37,7 +45,7 @@ import FrameworkEditor from '@/components/FrameworkEditor';
 import FrameworkSelector from '@/components/FrameworkSelector';
 import PillarSelector from '@/components/PillarSelector';
 import { getPost, createPost, updatePost, generateContent, schedulePost, publishPost, publishToLinkedIn, getSettings } from '@/lib/api';
-import { FRAMEWORKS, formatDate } from '@/lib/utils';
+import { FRAMEWORKS, formatDate, getErrorMessage } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
 export default function Editor() {
@@ -98,7 +106,7 @@ export default function Editor() {
         setScheduleTime(response.data.scheduled_time || '09:00');
       }
     } catch (error) {
-      toast.error('Failed to load post');
+      toast.error(getErrorMessage(error, 'Failed to load post'));
       navigate('/');
     } finally {
       setLoading(false);
@@ -129,7 +137,7 @@ export default function Editor() {
         navigate(`/editor/${response.data.id}`);
       }
     } catch (error) {
-      toast.error('Failed to save post');
+      toast.error(getErrorMessage(error, 'Failed to save post'));
     } finally {
       setSaving(false);
     }
@@ -151,8 +159,7 @@ export default function Editor() {
       }));
       toast.success('Published to LinkedIn! 30-minute engagement timer started.');
     } catch (error) {
-      const message = error.response?.data?.detail || 'Failed to publish to LinkedIn';
-      toast.error(message);
+      toast.error(getErrorMessage(error, 'Failed to publish to LinkedIn'));
     } finally {
       setPublishingToLinkedIn(false);
     }
@@ -202,7 +209,7 @@ export default function Editor() {
       setPost(prev => ({ ...prev, status: 'published' }));
       toast.success('Post published! 30-minute engagement timer started.');
     } catch (error) {
-      toast.error('Failed to publish post');
+      toast.error(getErrorMessage(error, 'Failed to publish post'));
     } finally {
       setPublishing(false);
     }
@@ -237,7 +244,7 @@ export default function Editor() {
       toast.success('Content generated!');
     } catch (error) {
       console.error('Generation error:', error);
-      toast.error(error.response?.data?.detail || 'Failed to generate content');
+      toast.error(getErrorMessage(error, 'Failed to generate content'));
     } finally {
       setGenerating(false);
     }
@@ -251,7 +258,7 @@ export default function Editor() {
       toast.success('Copied to clipboard!');
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      toast.error('Failed to copy');
+      toast.error(getErrorMessage(error, 'Failed to copy to clipboard'));
     }
   };
 
@@ -294,14 +301,45 @@ export default function Editor() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/')}
+            onClick={() => navigate(-1)}
             data-testid="editor-back-btn"
-            className="text-neutral-400 hover:text-white"
-            aria-label="Go back to dashboard"
+            className="text-neutral-400 hover:text-white md:hidden"
+            aria-label="Go back"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
+            {/* Breadcrumb - hidden on mobile */}
+            <Breadcrumb className="hidden md:block mb-1">
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <button onClick={() => navigate('/')} className="flex items-center gap-1 text-neutral-400 hover:text-white">
+                      <Home className="w-3 h-3" />
+                      Dashboard
+                    </button>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="text-neutral-600" />
+                {postId && (
+                  <>
+                    <BreadcrumbItem>
+                      <BreadcrumbLink asChild>
+                        <button onClick={() => navigate('/library')} className="text-neutral-400 hover:text-white">
+                          Library
+                        </button>
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator className="text-neutral-600" />
+                  </>
+                )}
+                <BreadcrumbItem>
+                  <BreadcrumbPage className="text-white">
+                    {postId ? 'Edit Post' : 'Create Post'}
+                  </BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
             <h1 className="font-heading text-xl font-bold uppercase tracking-wide text-white">
               {postId ? 'Edit Post' : 'Create Post'}
             </h1>

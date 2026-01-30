@@ -41,7 +41,7 @@ import {
   getKnowledgeItems, createKnowledgeItem, deleteKnowledgeItem, 
   uploadKnowledgeFile, addKnowledgeFromUrl, extractGems 
 } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { cn, getErrorMessage } from '@/lib/utils';
 
 const SOURCE_TYPES = [
   { value: 'text', label: 'Text Note', icon: FileText },
@@ -78,7 +78,7 @@ export default function KnowledgeVault() {
       const response = await getKnowledgeItems(sourceType);
       setItems(response.data);
     } catch (error) {
-      toast.error('Failed to load knowledge items');
+      toast.error(getErrorMessage(error, 'Failed to load knowledge items'));
     } finally {
       setLoading(false);
     }
@@ -106,7 +106,7 @@ export default function KnowledgeVault() {
       setNewItem({ title: '', content: '', source_type: 'text', tags: '' });
       fetchItems();
     } catch (error) {
-      toast.error('Failed to create item');
+      toast.error(getErrorMessage(error, 'Failed to create item'));
     } finally {
       setUploading(false);
     }
@@ -128,7 +128,7 @@ export default function KnowledgeVault() {
       toast.success('File uploaded successfully');
       fetchItems();
     } catch (error) {
-      toast.error('Failed to upload file');
+      toast.error(getErrorMessage(error, 'Failed to upload file'));
     } finally {
       setUploading(false);
     }
@@ -149,7 +149,7 @@ export default function KnowledgeVault() {
       setNewUrl({ url: '', title: '', tags: '' });
       fetchItems();
     } catch (error) {
-      toast.error('Failed to fetch URL content');
+      toast.error(getErrorMessage(error, 'Failed to fetch URL content'));
     } finally {
       setUploading(false);
     }
@@ -161,7 +161,7 @@ export default function KnowledgeVault() {
       setItems(prev => prev.filter(i => i.id !== id));
       toast.success('Item deleted');
     } catch (error) {
-      toast.error('Failed to delete item');
+      toast.error(getErrorMessage(error, 'Failed to delete item'));
     }
   };
 
@@ -172,7 +172,7 @@ export default function KnowledgeVault() {
       toast.success(`Extracted ${response.data.gems.length} gems!`);
       fetchItems();
     } catch (error) {
-      toast.error('Failed to extract gems');
+      toast.error(getErrorMessage(error, 'Failed to extract gems'));
     } finally {
       setExtracting(null);
     }

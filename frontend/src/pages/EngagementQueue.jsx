@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { trackedPostsAPI, aiAPI } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { cn, getErrorMessage } from '@/lib/utils';
 import AddPostDialog from '@/components/engagement/AddPostDialog';
 
 const priorityColors = {
@@ -42,7 +42,7 @@ export default function EngagementQueue() {
       setQueue(queueRes.data);
       setEngagedPosts(engagedRes.data.slice(0, 10));
     } catch (error) {
-      toast.error('Failed to load engagement queue');
+      toast.error(getErrorMessage(error, 'Failed to load engagement queue'));
     } finally {
       setLoading(false);
     }
@@ -58,7 +58,7 @@ export default function EngagementQueue() {
       toast.success('Post marked as engaged');
       loadQueue();
     } catch (error) {
-      toast.error('Failed to mark post');
+      toast.error(getErrorMessage(error, 'Failed to mark post'));
     }
   };
 
@@ -68,7 +68,7 @@ export default function EngagementQueue() {
       toast.success('Post skipped');
       loadQueue();
     } catch (error) {
-      toast.error('Failed to skip post');
+      toast.error(getErrorMessage(error, 'Failed to skip post'));
     }
   };
 
@@ -99,7 +99,7 @@ export default function EngagementQueue() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+          <h1 className="font-heading text-4xl font-black uppercase tracking-tight text-white flex items-center gap-3">
             <MessageCircle className="w-8 h-8 text-green-400" />
             Engagement Queue
           </h1>
@@ -366,7 +366,7 @@ function CommentDraftingDialog({ open, onOpenChange, post, onSuccess }) {
       });
       setEditedComments(edited);
     } catch (error) {
-      toast.error('Failed to generate comments');
+      toast.error(getErrorMessage(error, 'Failed to generate comments'));
     } finally {
       setLoading(false);
     }
@@ -403,7 +403,7 @@ function CommentDraftingDialog({ open, onOpenChange, post, onSuccess }) {
       
       onSuccess();
     } catch (error) {
-      toast.error('Failed to save comment');
+      toast.error(getErrorMessage(error, 'Failed to save comment'));
     }
   };
 

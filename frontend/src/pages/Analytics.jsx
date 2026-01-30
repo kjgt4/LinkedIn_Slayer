@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getPerformanceMetrics, getPillarRecommendation } from '@/lib/api';
-import { PILLARS, FRAMEWORKS } from '@/lib/utils';
+import { PILLARS, FRAMEWORKS, getErrorMessage } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
 export default function Analytics() {
@@ -29,7 +29,7 @@ export default function Analytics() {
       setMetrics(metricsRes.data);
       setRecommendation(recRes.data);
     } catch (error) {
-      toast.error('Failed to load analytics');
+      toast.error(getErrorMessage(error, 'Failed to load analytics'));
     } finally {
       setLoading(false);
     }
