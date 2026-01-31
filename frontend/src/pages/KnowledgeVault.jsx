@@ -190,59 +190,56 @@ export default function KnowledgeVault() {
   };
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-heading text-4xl font-black uppercase tracking-tight text-white">
+          <h1 className="font-heading text-3xl md:text-4xl font-black uppercase tracking-tight text-foreground">
             Knowledge Vault
           </h1>
-          <p className="text-neutral-400 mt-2">Store your expertise for AI-powered content generation</p>
+          <p className="text-muted-foreground mt-2">Store your expertise for AI-powered content generation</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           {/* URL Dialog */}
           <Dialog open={urlDialogOpen} onOpenChange={setUrlDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" data-testid="add-url-btn" className="border-white/10">
+              <Button variant="outline" data-testid="add-url-btn">
                 <Link className="w-4 h-4 mr-2" />
                 Add URL
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-charcoal border-white/10">
+            <DialogContent>
               <DialogHeader>
-                <DialogTitle className="text-white">Add from URL</DialogTitle>
-                <DialogDescription className="text-neutral-400">
+                <DialogTitle>Add from URL</DialogTitle>
+                <DialogDescription>
                   Import content from a webpage
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label className="text-neutral-400">URL</Label>
+                  <Label className="text-muted-foreground">URL</Label>
                   <Input
                     value={newUrl.url}
                     onChange={(e) => setNewUrl(prev => ({ ...prev, url: e.target.value }))}
                     placeholder="https://..."
                     data-testid="url-input"
-                    className="bg-black/30 border-white/10"
                   />
                 </div>
                 <div>
-                  <Label className="text-neutral-400">Title</Label>
+                  <Label className="text-muted-foreground">Title</Label>
                   <Input
                     value={newUrl.title}
                     onChange={(e) => setNewUrl(prev => ({ ...prev, title: e.target.value }))}
                     placeholder="Content title"
                     data-testid="url-title-input"
-                    className="bg-black/30 border-white/10"
                   />
                 </div>
                 <div>
-                  <Label className="text-neutral-400">Tags (comma-separated)</Label>
+                  <Label className="text-muted-foreground">Tags (comma-separated)</Label>
                   <Input
                     value={newUrl.tags}
                     onChange={(e) => setNewUrl(prev => ({ ...prev, tags: e.target.value }))}
                     placeholder="marketing, strategy, AI"
-                    className="bg-black/30 border-white/10"
                   />
                 </div>
               </div>
@@ -264,7 +261,7 @@ export default function KnowledgeVault() {
               onChange={handleFileUpload}
               data-testid="file-upload-input"
             />
-            <Button variant="outline" className="border-white/10 pointer-events-none">
+            <Button variant="outline" className="pointer-events-none">
               <Upload className="w-4 h-4 mr-2" />
               Upload File
             </Button>
@@ -278,34 +275,33 @@ export default function KnowledgeVault() {
                 Add Note
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-charcoal border-white/10 w-[95vw] max-w-2xl">
+            <DialogContent className="w-[95vw] max-w-2xl">
               <DialogHeader>
-                <DialogTitle className="text-white">Add Knowledge Item</DialogTitle>
-                <DialogDescription className="text-neutral-400">
+                <DialogTitle>Add Knowledge Item</DialogTitle>
+                <DialogDescription>
                   Add expertise, SOPs, transcripts, or notes to your vault
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label className="text-neutral-400">Title</Label>
+                  <Label className="text-muted-foreground">Title</Label>
                   <Input
                     value={newItem.title}
                     onChange={(e) => setNewItem(prev => ({ ...prev, title: e.target.value }))}
                     placeholder="e.g., Sales Call Framework"
                     data-testid="knowledge-title-input"
-                    className="bg-black/30 border-white/10"
                   />
                 </div>
                 <div>
-                  <Label className="text-neutral-400">Type</Label>
+                  <Label className="text-muted-foreground">Type</Label>
                   <Select
                     value={newItem.source_type}
                     onValueChange={(v) => setNewItem(prev => ({ ...prev, source_type: v }))}
                   >
-                    <SelectTrigger data-testid="source-type-select" className="bg-black/30 border-white/10">
+                    <SelectTrigger data-testid="source-type-select">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-charcoal border-white/10">
+                    <SelectContent>
                       {SOURCE_TYPES.map(type => (
                         <SelectItem key={type.value} value={type.value}>
                           <span className="flex items-center gap-2">
@@ -318,22 +314,21 @@ export default function KnowledgeVault() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-neutral-400">Content</Label>
+                  <Label className="text-muted-foreground">Content</Label>
                   <Textarea
                     value={newItem.content}
                     onChange={(e) => setNewItem(prev => ({ ...prev, content: e.target.value }))}
                     placeholder="Paste your content, transcript, or notes..."
                     data-testid="knowledge-content-textarea"
-                    className="min-h-[200px] bg-black/30 border-white/10"
+                    className="min-h-[200px]"
                   />
                 </div>
                 <div>
-                  <Label className="text-neutral-400">Tags (comma-separated)</Label>
+                  <Label className="text-muted-foreground">Tags (comma-separated)</Label>
                   <Input
                     value={newItem.tags}
                     onChange={(e) => setNewItem(prev => ({ ...prev, tags: e.target.value }))}
                     placeholder="sales, methodology, consulting"
-                    className="bg-black/30 border-white/10"
                   />
                 </div>
               </div>
@@ -349,19 +344,19 @@ export default function KnowledgeVault() {
       </div>
 
       {/* Search and Filters */}
-      <div className="flex gap-4 items-center">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+        <div className="relative flex-1 w-full sm:max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by title or tag..."
             data-testid="knowledge-search-input"
-            className="pl-10 bg-black/30 border-white/10"
+            className="pl-10"
           />
         </div>
         <Tabs value={filter} onValueChange={setFilter}>
-          <TabsList className="bg-black/30 border border-white/10">
+          <TabsList className="bg-muted">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="text">Notes</TabsTrigger>
             <TabsTrigger value="url">URLs</TabsTrigger>
@@ -374,7 +369,7 @@ export default function KnowledgeVault() {
       {/* Items Grid */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-electric-blue" />
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       ) : filteredItems.length === 0 ? (
         <EmptyState
@@ -395,24 +390,24 @@ export default function KnowledgeVault() {
             return (
               <div
                 key={item.id}
-                className="card-surface p-5 hover:border-white/20 transition-all duration-200 group"
+                className="card-surface p-5 hover:border-primary/30 transition-all duration-200 group"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded bg-electric-blue/20 flex items-center justify-center">
-                      <Icon className="w-4 h-4 text-electric-blue" />
+                    <div className="w-8 h-8 rounded bg-primary/20 flex items-center justify-center">
+                      <Icon className="w-4 h-4 text-primary" />
                     </div>
-                    <span className="text-xs text-neutral-500 uppercase tracking-wider">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">
                       {SOURCE_TYPES.find(s => s.value === item.source_type)?.label}
                     </span>
                   </div>
                 </div>
 
-                <h3 className="font-medium text-white mb-2 line-clamp-1">
+                <h3 className="font-medium text-foreground mb-2 line-clamp-1">
                   {item.title}
                 </h3>
-                
-                <p className="text-sm text-neutral-500 line-clamp-2 mb-3">
+
+                <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
                   {item.content?.slice(0, 150) || 'No content preview...'}
                 </p>
 
@@ -420,7 +415,7 @@ export default function KnowledgeVault() {
                 {item.tags?.length > 0 && (
                   <div className="flex flex-wrap gap-1 mb-3">
                     {item.tags.slice(0, 3).map((tag, i) => (
-                      <span key={i} className="px-2 py-0.5 bg-white/5 text-neutral-400 text-xs rounded">
+                      <span key={i} className="px-2 py-0.5 bg-muted text-muted-foreground text-xs rounded">
                         {tag}
                       </span>
                     ))}
@@ -430,7 +425,7 @@ export default function KnowledgeVault() {
                 {/* Extracted Gems */}
                 {item.extracted_gems?.length > 0 && (
                   <div className="mb-3 p-2 bg-purple-500/10 border border-purple-500/30 rounded">
-                    <p className="text-xs text-purple-400 mb-1">
+                    <p className="text-xs text-purple-600 dark:text-purple-400 mb-1">
                       <Sparkles className="w-3 h-3 inline mr-1" />
                       {item.extracted_gems.length} gems extracted
                     </p>
@@ -445,7 +440,7 @@ export default function KnowledgeVault() {
                     onClick={() => handleExtractGems(item.id)}
                     disabled={extracting === item.id}
                     data-testid={`extract-gems-${item.id}-btn`}
-                    className="flex-1 text-purple-400 hover:text-purple-300 hover:bg-purple-500/10"
+                    className="flex-1 text-purple-600 dark:text-purple-400 hover:text-purple-500 dark:hover:text-purple-300 hover:bg-purple-500/10"
                   >
                     {extracting === item.id ? (
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -454,30 +449,30 @@ export default function KnowledgeVault() {
                     )}
                     Extract Gems
                   </Button>
-                  
+
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button
                         variant="ghost"
                         size="sm"
                         data-testid={`delete-knowledge-${item.id}-btn`}
-                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        className="text-destructive hover:text-destructive/80 hover:bg-destructive/10"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent className="bg-charcoal border-white/10">
+                    <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle className="text-white">Delete Item?</AlertDialogTitle>
-                        <AlertDialogDescription className="text-neutral-400">
+                        <AlertDialogTitle>Delete Item?</AlertDialogTitle>
+                        <AlertDialogDescription>
                           This will permanently delete this knowledge item.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel className="border-white/10 text-white hover:bg-white/10">Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => handleDelete(item.id)}
-                          className="bg-red-500 hover:bg-red-600"
+                          className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                         >
                           Delete
                         </AlertDialogAction>

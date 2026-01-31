@@ -81,21 +81,21 @@ export default function Pricing() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-electric-blue" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-charcoal py-12 px-4">
+    <div className="min-h-screen bg-background py-12 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="font-heading text-4xl md:text-5xl font-black uppercase tracking-tight text-white mb-4">
+          <h1 className="font-heading text-4xl md:text-5xl font-black uppercase tracking-tight text-foreground mb-4">
             Choose Your Plan
           </h1>
-          <p className="text-neutral-400 text-lg max-w-2xl mx-auto">
-            Build your LinkedIn authority with AI-powered content creation. 
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            Build your LinkedIn authority with AI-powered content creation.
             Start free, upgrade when you&apos;re ready.
           </p>
         </div>
@@ -103,16 +103,16 @@ export default function Pricing() {
         {/* Controls */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
           <CurrencySelector value={currency} onChange={setCurrency} />
-          
-          <div className="flex items-center gap-1 bg-neutral-900/50 rounded-lg p-1">
+
+          <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
             <button
               onClick={() => setBillingCycle('monthly')}
               data-testid="billing-monthly"
               className={cn(
                 "px-4 py-2 rounded-md text-sm font-medium transition-all",
                 billingCycle === 'monthly'
-                  ? "bg-electric-blue text-white"
-                  : "text-neutral-400 hover:text-white hover:bg-white/5"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
               )}
             >
               Monthly
@@ -123,12 +123,12 @@ export default function Pricing() {
               className={cn(
                 "px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2",
                 billingCycle === 'annual'
-                  ? "bg-electric-blue text-white"
-                  : "text-neutral-400 hover:text-white hover:bg-white/5"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
               )}
             >
               Annual
-              <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">
+              <span className="text-xs bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full">
                 Save 17%
               </span>
             </button>
@@ -152,29 +152,29 @@ export default function Pricing() {
 
         {/* Feature Comparison Table */}
         <div className="mt-16">
-          <h2 className="font-heading text-2xl font-bold text-white text-center mb-8">
+          <h2 className="font-heading text-2xl font-bold text-foreground text-center mb-8">
             Feature Comparison
           </h2>
-          
+
           <div className="overflow-x-auto">
             <table className="w-full" data-testid="feature-comparison-table">
               <thead>
-                <tr className="border-b border-white/10">
-                  <th className="text-left py-4 px-4 text-neutral-400 font-medium">Feature</th>
+                <tr className="border-b border-border">
+                  <th className="text-left py-4 px-4 text-muted-foreground font-medium">Feature</th>
                   <th className="text-center py-4 px-4">
-                    <div className="flex items-center justify-center gap-2 text-neutral-400">
+                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
                       <Zap className="w-4 h-4" />
                       Free
                     </div>
                   </th>
                   <th className="text-center py-4 px-4">
-                    <div className="flex items-center justify-center gap-2 text-electric-blue">
+                    <div className="flex items-center justify-center gap-2 text-primary">
                       <Star className="w-4 h-4" />
                       Basic
                     </div>
                   </th>
                   <th className="text-center py-4 px-4">
-                    <div className="flex items-center justify-center gap-2 text-amber-400">
+                    <div className="flex items-center justify-center gap-2 text-amber-600 dark:text-amber-400">
                       <Crown className="w-4 h-4" />
                       Premium
                     </div>
@@ -183,8 +183,8 @@ export default function Pricing() {
               </thead>
               <tbody>
                 {featureComparison.map((feature, idx) => (
-                  <tr key={idx} className="border-b border-white/5 hover:bg-white/2">
-                    <td className="py-3 px-4 text-neutral-300">{feature.name}</td>
+                  <tr key={idx} className="border-b border-border/50 hover:bg-muted/50">
+                    <td className="py-3 px-4 text-foreground">{feature.name}</td>
                     <td className="py-3 px-4 text-center">
                       {renderFeatureValue(feature.free)}
                     </td>
@@ -203,9 +203,9 @@ export default function Pricing() {
 
         {/* FAQ / Refund Policy */}
         <div className="mt-16 text-center">
-          <p className="text-neutral-500 text-sm">
+          <p className="text-muted-foreground text-sm">
             Refunds are reviewed on a case-by-case basis.{' '}
-            <a href="mailto:support@example.com" className="text-electric-blue hover:underline">
+            <a href="mailto:support@example.com" className="text-primary hover:underline">
               Contact support
             </a>{' '}
             with any questions.
@@ -218,10 +218,10 @@ export default function Pricing() {
 
 function renderFeatureValue(value) {
   if (value === true) {
-    return <Check className="w-5 h-5 text-emerald-400 mx-auto" />;
+    return <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mx-auto" />;
   }
   if (value === false) {
-    return <X className="w-5 h-5 text-neutral-600 mx-auto" />;
+    return <X className="w-5 h-5 text-muted-foreground/50 mx-auto" />;
   }
-  return <span className="text-neutral-300">{value}</span>;
+  return <span className="text-foreground">{value}</span>;
 }
