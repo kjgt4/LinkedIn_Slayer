@@ -64,7 +64,7 @@ export default function Layout() {
 
       {/* Navigation */}
       <nav className="flex-1 p-4 overflow-y-auto">
-        <ul className="space-y-2">
+        <ul className="space-y-1">
           {navItems.map(({ path, icon: Icon, label }) => {
             const isActive = path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
             return (
@@ -74,13 +74,13 @@ export default function Layout() {
                   data-testid={`nav-${label.toLowerCase()}`}
                   onClick={() => isMobile && setMobileMenuOpen(false)}
                   className={cn(
-                    'flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200',
+                    'flex items-center gap-3 px-4 py-3 min-h-[44px] rounded-lg transition-all duration-200',
                     isActive
-                      ? 'bg-sidebar-accent text-sidebar-accent-foreground border border-sidebar-border'
+                      ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold'
                       : 'text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent/50'
                   )}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className="w-5 h-5 shrink-0" />
                   <span className="font-medium">{label}</span>
                 </NavLink>
               </li>
@@ -137,27 +137,27 @@ export default function Layout() {
   return (
     <div className="flex min-h-screen">
       {/* Mobile Header */}
-      <div className="fixed top-0 left-0 right-0 h-16 glass flex items-center justify-between px-4 z-40 md:hidden">
+      <header className="fixed top-0 left-0 right-0 h-16 bg-background/95 backdrop-blur-md border-b border-border flex items-center justify-between px-4 z-40 md:hidden safe-area-inset">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <Zap className="w-4 h-4 text-primary-foreground" />
+          <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center shadow-sm">
+            <Zap className="w-5 h-5 text-primary-foreground" />
           </div>
-          <span className="text-sm font-bold uppercase tracking-wider text-foreground">Authority</span>
+          <span className="text-base font-bold uppercase tracking-wider text-foreground">Authority</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <ThemeToggle />
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Open navigation menu">
+              <Button variant="ghost" size="icon" className="h-11 w-11" aria-label="Open navigation menu">
                 <Menu className="w-6 h-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0 bg-sidebar border-r border-sidebar-border flex flex-col">
+            <SheetContent side="left" className="w-72 p-0 bg-sidebar border-r border-sidebar-border flex flex-col">
               <SidebarContent isMobile={true} />
             </SheetContent>
           </Sheet>
         </div>
-      </div>
+      </header>
 
       {/* Desktop Sidebar - hidden on mobile */}
       <aside className="hidden md:flex fixed left-0 top-0 h-screen w-64 bg-sidebar border-r border-sidebar-border flex-col z-50">
