@@ -166,13 +166,13 @@ export default function Library() {
                 </div>
               )}
 
-              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-2 pt-3 border-t border-border mt-auto lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => navigate(`/editor/${post.id}`)}
                   data-testid={`edit-post-${post.id}-btn`}
-                  className="flex-1"
+                  className="flex-1 h-10"
                 >
                   <Edit3 className="w-4 h-4 mr-2" />
                   Edit
@@ -184,7 +184,7 @@ export default function Library() {
                       variant="ghost"
                       size="sm"
                       data-testid={`delete-post-${post.id}-btn`}
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      className="h-10 w-10 text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
