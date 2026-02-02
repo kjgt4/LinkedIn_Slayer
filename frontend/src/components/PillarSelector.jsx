@@ -22,9 +22,9 @@ export default function PillarSelector({ value, onChange }) {
             data-testid={`pillar-${key}-btn`}
             className={cn(
               "flex-1 p-3 rounded-lg border transition-all duration-200",
-              isSelected 
+              isSelected
                 ? color
-                : "border-white/10 bg-white/5 hover:bg-white/10 text-neutral-400"
+                : "border-border bg-muted/50 hover:bg-muted text-muted-foreground"
             )}
           >
             <div className="flex items-center justify-center gap-2">

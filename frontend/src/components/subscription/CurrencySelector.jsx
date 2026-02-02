@@ -9,7 +9,7 @@ const currencies = [
 
 export function CurrencySelector({ value, onChange, className }) {
   return (
-    <div className={cn("flex items-center gap-1 bg-neutral-900/50 rounded-lg p-1", className)}>
+    <div className={cn("flex items-center gap-1 bg-muted rounded-lg p-1", className)}>
       {currencies.map((currency) => (
         <button
           key={currency.code}
@@ -18,8 +18,8 @@ export function CurrencySelector({ value, onChange, className }) {
           className={cn(
             "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
             value === currency.code
-              ? "bg-electric-blue text-white"
-              : "text-neutral-400 hover:text-white hover:bg-white/5"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground hover:bg-background/50"
           )}
         >
           <span>{currency.flag}</span>

@@ -17,13 +17,13 @@ export function GracePeriodBanner({ className }) {
     )} data-testid="grace-period-banner">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
-          <AlertTriangle className="w-5 h-5 text-amber-400" />
+          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
         </div>
         <div>
-          <p className="text-white font-medium">Payment Failed</p>
-          <p className="text-sm text-neutral-400">
+          <p className="text-foreground font-medium">Payment Failed</p>
+          <p className="text-sm text-muted-foreground">
             We couldn&apos;t process your payment. Update within{' '}
-            <span className="text-amber-400 font-medium">{gracePeriodHours} hours</span>{' '}
+            <span className="text-amber-600 dark:text-amber-400 font-medium">{gracePeriodHours} hours</span>{' '}
             to keep your {tier} features.
           </p>
         </div>
@@ -56,25 +56,24 @@ export function OverLimitBanner({ resourceType, current, limit, className }) {
 
   return (
     <div className={cn(
-      "flex items-center justify-between p-4 rounded-lg bg-neutral-900/50 border border-white/10",
+      "flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-border",
       className
     )} data-testid="over-limit-banner">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center">
-          <Clock className="w-5 h-5 text-neutral-400" />
+        <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+          <Clock className="w-5 h-5 text-muted-foreground" />
         </div>
         <div>
-          <p className="text-white font-medium">Over Limit</p>
-          <p className="text-sm text-neutral-400">
-            You have <span className="text-white">{current}</span> {label} but your plan allows{' '}
-            <span className="text-white">{limit}</span>. Your existing items are safe.
+          <p className="text-foreground font-medium">Over Limit</p>
+          <p className="text-sm text-muted-foreground">
+            You have <span className="text-foreground">{current}</span> {label} but your plan allows{' '}
+            <span className="text-foreground">{limit}</span>. Your existing items are safe.
           </p>
         </div>
       </div>
-      <Button 
-        onClick={() => navigate('/pricing')} 
+      <Button
+        onClick={() => navigate('/pricing')}
         variant="outline"
-        className="border-white/10"
         data-testid="upgrade-limit-btn"
       >
         Upgrade to Add More

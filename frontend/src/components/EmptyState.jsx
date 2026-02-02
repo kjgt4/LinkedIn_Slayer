@@ -23,13 +23,13 @@ export default function EmptyState({
       className
     )}>
       {Icon && (
-        <Icon className="w-12 h-12 text-neutral-600 mx-auto mb-4" />
+        <Icon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
       )}
       {title && (
-        <h3 className="text-lg font-medium text-white mb-2">{title}</h3>
+        <h3 className="text-lg font-medium text-foreground mb-2">{title}</h3>
       )}
       {description && (
-        <p className="text-neutral-400 mb-4 max-w-md mx-auto">{description}</p>
+        <p className="text-muted-foreground mb-4 max-w-md mx-auto">{description}</p>
       )}
       {action && (
         <div className="flex justify-center gap-3">
