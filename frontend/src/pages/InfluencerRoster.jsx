@@ -92,21 +92,21 @@ export default function InfluencerRoster() {
   };
 
   return (
-    <div className="p-8 space-y-8" data-testid="influencer-roster">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8" data-testid="influencer-roster">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-heading text-4xl font-black uppercase tracking-tight text-white flex items-center gap-3">
-            <Users className="w-8 h-8 text-electric-blue" />
+          <h1 className="font-heading text-3xl md:text-4xl font-black uppercase tracking-tight text-foreground flex items-center gap-3">
+            <Users className="w-8 h-8 text-primary" />
             Influencer Roster
           </h1>
-          <p className="text-slate-400 mt-1">Track and engage with influential voices in your niche</p>
+          <p className="text-muted-foreground mt-1">Track and engage with influential voices in your niche</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Button
             variant="outline"
             onClick={() => setShowDiscoveryDialog(true)}
-            className="border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
+            className="border-purple-500/50 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10"
             data-testid="discovery-assistant-btn"
           >
             <Sparkles className="w-4 h-4 mr-2" />
@@ -114,7 +114,7 @@ export default function InfluencerRoster() {
           </Button>
           <Button
             onClick={() => { setEditingInfluencer(null); setShowAddDialog(true); }}
-            className="bg-electric-blue hover:bg-electric-blue/80"
+            className="btn-primary"
             data-testid="add-influencer-btn"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -124,52 +124,54 @@ export default function InfluencerRoster() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4 items-center">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+        <div className="relative flex-1 w-full sm:max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search by name, headline, or theme..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-charcoal border-white/10"
+            className="pl-10"
             data-testid="search-influencers"
           />
         </div>
-        <Select value={filterPriority} onValueChange={setFilterPriority}>
-          <SelectTrigger className="w-40 bg-charcoal border-white/10">
-            <SelectValue placeholder="Priority" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Priorities</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-40 bg-charcoal border-white/10">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="discovered">Discovered</SelectItem>
-            <SelectItem value="following">Following</SelectItem>
-            <SelectItem value="engaged">Engaged</SelectItem>
-            <SelectItem value="connected">Connected</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2">
+          <Select value={filterPriority} onValueChange={setFilterPriority}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Priorities</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="discovered">Discovered</SelectItem>
+              <SelectItem value="following">Following</SelectItem>
+              <SelectItem value="engaged">Engaged</SelectItem>
+              <SelectItem value="connected">Connected</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Influencer Grid */}
       {loading ? (
-        <div className="text-center py-12 text-slate-400">Loading influencers...</div>
+        <div className="text-center py-12 text-muted-foreground">Loading influencers...</div>
       ) : filteredInfluencers.length === 0 ? (
         <EmptyState
           icon={Users}
           title="No influencers yet"
           description="Start building your network by adding influential voices in your niche"
           action={
-            <Button onClick={() => setShowAddDialog(true)} className="bg-electric-blue">
+            <Button onClick={() => setShowAddDialog(true)} className="btn-primary">
               <Plus className="w-4 h-4 mr-2" />
               Add Your First Influencer
             </Button>
@@ -180,17 +182,17 @@ export default function InfluencerRoster() {
           {filteredInfluencers.map((influencer) => (
             <div
               key={influencer.id}
-              className="bg-charcoal border border-white/10 rounded-lg p-5 hover:border-electric-blue/30 transition-colors"
+              className="card-surface p-5 hover:border-primary/30 transition-colors"
               data-testid={`influencer-card-${influencer.id}`}
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center text-lg font-bold text-white">
+                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-lg font-bold text-foreground">
                     {influencer.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white">{influencer.name}</h3>
-                    <p className="text-sm text-slate-400 line-clamp-1">{influencer.headline || 'No headline'}</p>
+                    <h3 className="font-semibold text-foreground">{influencer.name}</h3>
+                    <p className="text-sm text-muted-foreground line-clamp-1">{influencer.headline || 'No headline'}</p>
                   </div>
                 </div>
                 <Badge className={cn('text-xs', priorityColors[influencer.engagement_priority])}>
@@ -199,18 +201,18 @@ export default function InfluencerRoster() {
               </div>
 
               {influencer.follower_count && (
-                <p className="text-sm text-slate-500 mb-2">{influencer.follower_count.toLocaleString()} followers</p>
+                <p className="text-sm text-muted-foreground mb-2">{influencer.follower_count.toLocaleString()} followers</p>
               )}
 
               {influencer.content_themes?.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-3">
                   {influencer.content_themes.slice(0, 3).map((theme, idx) => (
-                    <Badge key={idx} variant="outline" className="text-xs bg-slate-800/50 border-slate-700">
+                    <Badge key={idx} variant="outline" className="text-xs bg-muted">
                       {theme}
                     </Badge>
                   ))}
                   {influencer.content_themes.length > 3 && (
-                    <Badge variant="outline" className="text-xs bg-slate-800/50 border-slate-700">
+                    <Badge variant="outline" className="text-xs bg-muted">
                       +{influencer.content_themes.length - 3}
                     </Badge>
                   )}
@@ -221,16 +223,16 @@ export default function InfluencerRoster() {
                 <Badge className={cn('text-xs', statusColors[influencer.relationship_status])}>
                   {influencer.relationship_status}
                 </Badge>
-                <span className="text-slate-500">{formatLastEngaged(influencer.last_engaged_at)}</span>
+                <span className="text-muted-foreground">{formatLastEngaged(influencer.last_engaged_at)}</span>
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2 mt-4 pt-4 border-t border-white/10">
+              <div className="flex gap-2 mt-4 pt-4 border-t border-border">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleAddPost(influencer)}
-                  className="flex-1 border-green-500/50 text-green-400 hover:bg-green-500/10"
+                  className="flex-1 border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
                   data-testid={`add-post-btn-${influencer.id}`}
                 >
                   <MessageCircle className="w-3 h-3 mr-1" />
@@ -253,7 +255,7 @@ export default function InfluencerRoster() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-red-400 hover:text-red-300"
+                  className="text-destructive hover:text-destructive/80"
                   onClick={() => handleDelete(influencer.id)}
                 >
                   <Trash2 className="w-4 h-4" />
@@ -394,7 +396,7 @@ function AddInfluencerDialog({ open, onOpenChange, influencer, onSuccess }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg bg-charcoal border-white/10">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{influencer ? 'Edit Influencer' : 'Add Influencer'}</DialogTitle>
           <DialogDescription>Track a new influential voice in your niche</DialogDescription>
@@ -409,13 +411,13 @@ function AddInfluencerDialog({ open, onOpenChange, influencer, onSuccess }) {
                 if (errors.name) setErrors({ ...errors, name: null });
               }}
               placeholder="John Smith"
-              className={cn("bg-obsidian border-white/10", errors.name && "border-red-500")}
+              className={cn(errors.name && "border-destructive")}
               data-testid="influencer-name-input"
               aria-invalid={!!errors.name}
               aria-describedby={errors.name ? "name-error" : undefined}
             />
             {errors.name && (
-              <p id="name-error" className="text-xs text-red-400 mt-1">{errors.name}</p>
+              <p id="name-error" className="text-xs text-destructive mt-1">{errors.name}</p>
             )}
           </div>
           <div>
@@ -427,13 +429,13 @@ function AddInfluencerDialog({ open, onOpenChange, influencer, onSuccess }) {
                 if (errors.linkedin_url) setErrors({ ...errors, linkedin_url: null });
               }}
               placeholder="https://linkedin.com/in/johnsmith"
-              className={cn("bg-obsidian border-white/10", errors.linkedin_url && "border-red-500")}
+              className={cn(errors.linkedin_url && "border-destructive")}
               data-testid="influencer-url-input"
               aria-invalid={!!errors.linkedin_url}
               aria-describedby={errors.linkedin_url ? "url-error" : undefined}
             />
             {errors.linkedin_url && (
-              <p id="url-error" className="text-xs text-red-400 mt-1">{errors.linkedin_url}</p>
+              <p id="url-error" className="text-xs text-destructive mt-1">{errors.linkedin_url}</p>
             )}
           </div>
           <div>
@@ -442,7 +444,6 @@ function AddInfluencerDialog({ open, onOpenChange, influencer, onSuccess }) {
               value={formData.headline}
               onChange={(e) => setFormData({ ...formData, headline: e.target.value })}
               placeholder="CEO at Company | Thought Leader"
-              className="bg-obsidian border-white/10"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -453,13 +454,12 @@ function AddInfluencerDialog({ open, onOpenChange, influencer, onSuccess }) {
                 value={formData.follower_count}
                 onChange={(e) => setFormData({ ...formData, follower_count: e.target.value })}
                 placeholder="10000"
-                className="bg-obsidian border-white/10"
               />
             </div>
             <div>
               <Label>Priority</Label>
               <Select value={formData.engagement_priority} onValueChange={(v) => setFormData({ ...formData, engagement_priority: v })}>
-                <SelectTrigger className="bg-obsidian border-white/10">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -473,7 +473,7 @@ function AddInfluencerDialog({ open, onOpenChange, influencer, onSuccess }) {
           <div>
             <Label>Relationship Status</Label>
             <Select value={formData.relationship_status} onValueChange={(v) => setFormData({ ...formData, relationship_status: v })}>
-              <SelectTrigger className="bg-obsidian border-white/10">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -490,7 +490,6 @@ function AddInfluencerDialog({ open, onOpenChange, influencer, onSuccess }) {
               value={formData.content_themes}
               onChange={(e) => setFormData({ ...formData, content_themes: e.target.value })}
               placeholder="B2B Sales, Leadership, SaaS"
-              className="bg-obsidian border-white/10"
             />
           </div>
           <div>
@@ -499,7 +498,6 @@ function AddInfluencerDialog({ open, onOpenChange, influencer, onSuccess }) {
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Any notes about this influencer..."
-              className="bg-obsidian border-white/10"
               rows={3}
             />
           </div>
@@ -507,7 +505,7 @@ function AddInfluencerDialog({ open, onOpenChange, influencer, onSuccess }) {
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={saving} className="bg-electric-blue">
+            <Button type="submit" disabled={saving} className="btn-primary">
               {saving ? 'Saving...' : (influencer ? 'Update' : 'Add Influencer')}
             </Button>
           </div>
@@ -551,10 +549,10 @@ function DiscoveryAssistantDialog({ open, onOpenChange, onAddInfluencer }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-2xl bg-charcoal border-white/10 max-h-[80vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-purple-400" />
+            <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             Find Influential Voices
           </DialogTitle>
           <DialogDescription>Get AI-powered strategies for discovering influencers in your niche</DialogDescription>
@@ -568,7 +566,6 @@ function DiscoveryAssistantDialog({ open, onOpenChange, onAddInfluencer }) {
                 value={formData.industry}
                 onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
                 placeholder="e.g., B2B SaaS, Healthcare Tech"
-                className="bg-obsidian border-white/10"
               />
             </div>
             <div>
@@ -577,7 +574,6 @@ function DiscoveryAssistantDialog({ open, onOpenChange, onAddInfluencer }) {
                 value={formData.audience}
                 onChange={(e) => setFormData({ ...formData, audience: e.target.value })}
                 placeholder="e.g., Sales Leaders, CTOs"
-                className="bg-obsidian border-white/10"
               />
             </div>
             <div>
@@ -585,10 +581,9 @@ function DiscoveryAssistantDialog({ open, onOpenChange, onAddInfluencer }) {
               <Input
                 value={formData.pillars}
                 onChange={(e) => setFormData({ ...formData, pillars: e.target.value })}
-                className="bg-obsidian border-white/10"
               />
             </div>
-            <Button onClick={generateSuggestions} disabled={loading} className="w-full bg-purple-600 hover:bg-purple-700">
+            <Button onClick={generateSuggestions} disabled={loading} className="w-full bg-purple-600 hover:bg-purple-700 text-white">
               {loading ? 'Generating...' : 'Generate Discovery Strategies'}
             </Button>
           </div>
@@ -596,18 +591,18 @@ function DiscoveryAssistantDialog({ open, onOpenChange, onAddInfluencer }) {
           <div className="space-y-6">
             {/* Search Strategies */}
             <div>
-              <h4 className="font-semibold text-white mb-3">Search Strategies</h4>
+              <h4 className="font-semibold text-foreground mb-3">Search Strategies</h4>
               <div className="space-y-3">
                 {suggestions.search_strategies?.map((strategy, idx) => (
-                  <div key={idx} className="bg-obsidian/50 rounded-lg p-4 border border-white/5">
+                  <div key={idx} className="bg-muted rounded-lg p-4 border border-border">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-electric-blue">{strategy.approach}</span>
+                      <span className="font-medium text-primary">{strategy.approach}</span>
                       <Button size="sm" variant="ghost" onClick={() => copyToClipboard(strategy.query)}>
                         Copy Query
                       </Button>
                     </div>
-                    <p className="text-sm text-slate-300 font-mono bg-slate-800/50 px-2 py-1 rounded mb-2">{strategy.query}</p>
-                    <p className="text-sm text-slate-400">{strategy.instructions}</p>
+                    <p className="text-sm text-foreground font-mono bg-background px-2 py-1 rounded mb-2">{strategy.query}</p>
+                    <p className="text-sm text-muted-foreground">{strategy.instructions}</p>
                   </div>
                 ))}
               </div>
@@ -616,10 +611,10 @@ function DiscoveryAssistantDialog({ open, onOpenChange, onAddInfluencer }) {
             {/* Suggested Niches */}
             {suggestions.suggested_niches?.length > 0 && (
               <div>
-                <h4 className="font-semibold text-white mb-3">Suggested Niches</h4>
+                <h4 className="font-semibold text-foreground mb-3">Suggested Niches</h4>
                 <div className="flex flex-wrap gap-2">
                   {suggestions.suggested_niches.map((niche, idx) => (
-                    <Badge key={idx} className="bg-purple-500/20 text-purple-300 border-purple-500/30">{niche}</Badge>
+                    <Badge key={idx} className="bg-purple-500/20 text-purple-600 dark:text-purple-300 border-purple-500/30">{niche}</Badge>
                   ))}
                 </div>
               </div>
@@ -628,12 +623,12 @@ function DiscoveryAssistantDialog({ open, onOpenChange, onAddInfluencer }) {
             {/* Search Terms */}
             {suggestions.suggested_search_terms?.length > 0 && (
               <div>
-                <h4 className="font-semibold text-white mb-3">Ready-to-Use Search Terms</h4>
+                <h4 className="font-semibold text-foreground mb-3">Ready-to-Use Search Terms</h4>
                 <div className="flex flex-wrap gap-2">
                   {suggestions.suggested_search_terms.map((term, idx) => (
                     <Badge
                       key={idx}
-                      className="bg-slate-700 text-white cursor-pointer hover:bg-slate-600"
+                      className="bg-muted text-foreground cursor-pointer hover:bg-muted/80"
                       onClick={() => copyToClipboard(term)}
                     >
                       {term}
@@ -643,11 +638,11 @@ function DiscoveryAssistantDialog({ open, onOpenChange, onAddInfluencer }) {
               </div>
             )}
 
-            <div className="flex gap-3 pt-4 border-t border-white/10">
+            <div className="flex gap-3 pt-4 border-t border-border">
               <Button variant="outline" onClick={() => setSuggestions(null)} className="flex-1">
                 Regenerate
               </Button>
-              <Button onClick={onAddInfluencer} className="flex-1 bg-electric-blue">
+              <Button onClick={onAddInfluencer} className="flex-1 btn-primary">
                 Found Someone? Add Them
               </Button>
             </div>

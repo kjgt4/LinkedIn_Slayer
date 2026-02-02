@@ -45,31 +45,31 @@ export default function FrameworkEditor({ framework, sections, onChange }) {
           onOpenChange={() => toggleSection(key)}
         >
           <div className="card-surface overflow-hidden">
-            <CollapsibleTrigger 
-              className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/5 transition-colors"
+            <CollapsibleTrigger
+              className="w-full px-4 py-3 flex items-center gap-3 hover:bg-muted transition-colors min-h-[48px]"
               data-testid={`framework-section-${key}-toggle`}
             >
               {openSections.includes(key) ? (
-                <ChevronDown className="w-4 h-4 text-neutral-500" />
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
               ) : (
-                <ChevronRight className="w-4 h-4 text-neutral-500" />
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
               )}
               <div className="flex-1 text-left">
-                <span className="font-heading text-lg font-semibold text-white uppercase tracking-wide">
+                <span className="font-heading text-lg font-semibold text-foreground uppercase tracking-wide">
                   {label[0]}
                 </span>
-                <span className="text-neutral-400 ml-2 text-sm">{label.slice(1)}</span>
+                <span className="text-muted-foreground ml-2 text-sm">{label.slice(1)}</span>
               </div>
-              <span className="text-xs text-neutral-500 hidden sm:block">{description}</span>
+              <span className="text-xs text-muted-foreground hidden sm:block">{description}</span>
             </CollapsibleTrigger>
-            
+
             <CollapsibleContent>
               <div className="px-4 pb-4">
                 <Textarea
                   value={sections[key] || ''}
                   onChange={(e) => handleSectionChange(key, e.target.value)}
                   placeholder={`Write your ${label.toLowerCase()}...`}
-                  className="min-h-[120px] bg-black/30 border-white/10 focus:border-electric-blue resize-none"
+                  className="min-h-[120px] resize-none"
                   data-testid={`framework-section-${key}-input`}
                 />
               </div>

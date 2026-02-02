@@ -38,11 +38,11 @@ export default function CalendarView() {
 
   if (loading || !calendar) {
     return (
-      <div className="card-surface p-8 animate-pulse">
-        <div className="h-8 bg-white/10 rounded w-48 mb-6" />
-        <div className="grid grid-cols-7 gap-4">
+      <div className="card-surface p-4 md:p-8 animate-pulse">
+        <div className="h-8 bg-muted rounded w-48 mb-6" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
           {[...Array(7)].map((_, i) => (
-            <div key={i} className="h-32 bg-white/5 rounded" />
+            <div key={i} className="h-32 bg-muted/50 rounded" />
           ))}
         </div>
       </div>
@@ -58,21 +58,21 @@ export default function CalendarView() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 md:gap-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setWeekOffset(prev => prev - 1)}
             data-testid="calendar-prev-week-btn"
-            className="text-neutral-400 hover:text-white"
+            className="h-10 w-10 text-muted-foreground hover:text-foreground"
             aria-label="Previous week"
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>
-          <h2 className="font-heading text-xl font-semibold uppercase tracking-wide">
+          <h2 className="font-heading text-base md:text-xl font-semibold uppercase tracking-wide text-foreground">
             {formatDate(calendar.week_start)} - {formatDate(calendar.week_end)}
           </h2>
           <Button
@@ -80,7 +80,7 @@ export default function CalendarView() {
             size="icon"
             onClick={() => setWeekOffset(prev => prev + 1)}
             data-testid="calendar-next-week-btn"
-            className="text-neutral-400 hover:text-white"
+            className="h-10 w-10 text-muted-foreground hover:text-foreground"
             aria-label="Next week"
           >
             <ChevronRight className="w-5 h-5" />
@@ -90,7 +90,7 @@ export default function CalendarView() {
               variant="ghost"
               size="sm"
               onClick={() => setWeekOffset(0)}
-              className="text-electric-blue"
+              className="text-primary"
             >
               Today
             </Button>
@@ -98,78 +98,80 @@ export default function CalendarView() {
         </div>
 
         {/* Pillar Balance */}
-        <div className="flex items-center gap-4">
-          <span className="text-xs text-neutral-500 uppercase tracking-wider">Balance:</span>
+        <div className="flex items-center gap-3 md:gap-4">
+          <span className="text-xs text-muted-foreground uppercase tracking-wider">Balance:</span>
           {Object.entries(pillarCounts).map(([pillar, count]) => (
             <div key={pillar} className="flex items-center gap-1">
-              <span className={cn("w-3 h-3 rounded-full", 
+              <span className={cn("w-3 h-3 rounded-full",
                 pillar === 'growth' ? 'bg-blue-500' :
                 pillar === 'tam' ? 'bg-amber-500' : 'bg-emerald-500'
               )} />
-              <span className="text-sm text-neutral-400">{count}</span>
+              <span className="text-sm text-muted-foreground">{count}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-3">
-        {calendar.days.map((day) => {
-          const isToday = day.date === new Date().toISOString().split('T')[0];
-          const filledSlots = day.slots.filter(Boolean).length;
-          
-          return (
-            <div
-              key={day.date}
-              className={cn(
-                "card-surface p-3 min-h-[180px]",
-                isToday && "ring-1 ring-electric-blue/50"
-              )}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <p className={cn(
-                    "text-xs uppercase tracking-wider",
-                    isToday ? "text-electric-blue" : "text-neutral-500"
-                  )}>
-                    {getDayName(day.date).slice(0, 3)}
-                  </p>
-                  <p className={cn(
-                    "font-heading text-2xl font-bold",
-                    isToday ? "text-white" : "text-neutral-400"
-                  )}>
-                    {new Date(day.date).getDate()}
-                  </p>
-                </div>
-                {filledSlots > 0 && (
-                  <span className="text-xs text-neutral-500">{filledSlots}/4</span>
-                )}
-              </div>
+      {/* Calendar Grid - Horizontal scroll on mobile */}
+      <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+        <div className="grid grid-cols-7 gap-2 md:gap-3 min-w-[640px] md:min-w-0">
+          {calendar.days.map((day) => {
+            const isToday = day.date === new Date().toISOString().split('T')[0];
+            const filledSlots = day.slots.filter(Boolean).length;
 
-              <div className="space-y-2">
-                {day.slots.slice(0, 4).map((post, slotIndex) => (
-                  <button
-                    key={slotIndex}
-                    onClick={() => handleSlotClick(day.date, slotIndex, post)}
-                    data-testid={`calendar-slot-${day.date}-${slotIndex}`}
-                    className={cn(
-                      "w-full h-8 rounded border transition-all duration-200 flex items-center justify-center text-xs",
-                      post
-                        ? cn(PILLARS[post.pillar]?.color, "hover:opacity-80")
-                        : "border-dashed border-white/10 hover:border-white/30 text-neutral-600 hover:text-neutral-400"
-                    )}
-                  >
-                    {post ? (
-                      <span className="truncate px-2">{post.hook || post.title || 'Draft'}</span>
-                    ) : (
-                      <Plus className="w-3 h-3" />
-                    )}
-                  </button>
-                ))}
+            return (
+              <div
+                key={day.date}
+                className={cn(
+                  "card-surface p-2 md:p-3 min-h-[160px] md:min-h-[180px]",
+                  isToday && "ring-1 ring-primary/50"
+                )}
+              >
+                <div className="flex items-center justify-between mb-2 md:mb-3">
+                  <div>
+                    <p className={cn(
+                      "text-xs uppercase tracking-wider",
+                      isToday ? "text-primary" : "text-muted-foreground"
+                    )}>
+                      {getDayName(day.date).slice(0, 3)}
+                    </p>
+                    <p className={cn(
+                      "font-heading text-xl md:text-2xl font-bold",
+                      isToday ? "text-foreground" : "text-muted-foreground"
+                    )}>
+                      {new Date(day.date).getDate()}
+                    </p>
+                  </div>
+                  {filledSlots > 0 && (
+                    <span className="text-xs text-muted-foreground">{filledSlots}/4</span>
+                  )}
+                </div>
+
+                <div className="space-y-1.5 md:space-y-2">
+                  {day.slots.slice(0, 4).map((post, slotIndex) => (
+                    <button
+                      key={slotIndex}
+                      onClick={() => handleSlotClick(day.date, slotIndex, post)}
+                      data-testid={`calendar-slot-${day.date}-${slotIndex}`}
+                      className={cn(
+                        "w-full h-8 md:h-8 rounded border transition-all duration-200 flex items-center justify-center text-xs",
+                        post
+                          ? cn(PILLARS[post.pillar]?.color, "hover:opacity-80")
+                          : "border-dashed border-border hover:border-primary/50 text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {post ? (
+                        <span className="truncate px-1 md:px-2">{post.hook || post.title || 'Draft'}</span>
+                      ) : (
+                        <Plus className="w-3 h-3" />
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );

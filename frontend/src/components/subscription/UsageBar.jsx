@@ -14,7 +14,7 @@ export function UsageBar({
   const isAtLimit = percent >= 100;
 
   const barColors = {
-    default: isAtLimit ? 'bg-red-500' : isNearLimit ? 'bg-amber-500' : 'bg-electric-blue',
+    default: isAtLimit ? 'bg-red-500' : isNearLimit ? 'bg-amber-500' : 'bg-primary',
     success: 'bg-emerald-500',
     warning: 'bg-amber-500',
     danger: 'bg-red-500',
@@ -25,32 +25,32 @@ export function UsageBar({
   return (
     <div className={cn("space-y-1.5", className)}>
       <div className="flex items-center justify-between text-sm">
-        <span className="text-neutral-400">{label}</span>
+        <span className="text-muted-foreground">{label}</span>
         <span className={cn(
           "font-medium",
-          isAtLimit ? "text-red-400" : isNearLimit ? "text-amber-400" : "text-neutral-300"
+          isAtLimit ? "text-red-600 dark:text-red-400" : isNearLimit ? "text-amber-600 dark:text-amber-400" : "text-foreground/80"
         )}>
           {isUnlimited ? (
-            <span className="text-emerald-400">Unlimited</span>
+            <span className="text-emerald-600 dark:text-emerald-400">Unlimited</span>
           ) : (
             <>
               {current} / {limit}
-              {showPercent && <span className="text-neutral-500 ml-1">({percent}%)</span>}
+              {showPercent && <span className="text-muted-foreground ml-1">({percent}%)</span>}
             </>
           )}
         </span>
       </div>
-      <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
+      <div className="h-2 bg-muted rounded-full overflow-hidden">
         <div 
           className={cn("h-full rounded-full transition-all duration-500", barColor)}
           style={{ width: isUnlimited ? '0%' : `${percent}%` }}
         />
       </div>
       {isAtLimit && (
-        <p className="text-xs text-red-400">Limit reached. Upgrade for more.</p>
+        <p className="text-xs text-red-600 dark:text-red-400">Limit reached. Upgrade for more.</p>
       )}
       {isNearLimit && !isAtLimit && (
-        <p className="text-xs text-amber-400">Near limit</p>
+        <p className="text-xs text-amber-600 dark:text-amber-400">Near limit</p>
       )}
     </div>
   );

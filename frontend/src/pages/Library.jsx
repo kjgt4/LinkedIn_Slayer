@@ -54,19 +54,19 @@ export default function Library() {
   };
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-6 md:p-8 space-y-6 md:space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-heading text-4xl font-black uppercase tracking-tight text-white">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
             Content Library
           </h1>
-          <p className="text-neutral-400 mt-2">Manage your drafts and published posts</p>
+          <p className="text-muted-foreground mt-2">Manage your drafts and published posts</p>
         </div>
         <Button
           onClick={() => navigate('/editor')}
           data-testid="library-create-btn"
-          className="btn-primary"
+          className="w-full sm:w-auto"
         >
           <Edit3 className="w-4 h-4 mr-2" />
           Create New
@@ -74,14 +74,14 @@ export default function Library() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {['all', 'draft', 'scheduled', 'published'].map((status) => (
           <Button
             key={status}
-            variant={filter === status ? 'default' : 'ghost'}
+            variant={filter === status ? 'default' : 'outline'}
             onClick={() => setFilter(status)}
             data-testid={`filter-${status}-btn`}
-            className={filter === status ? 'bg-electric-blue' : 'text-neutral-400 hover:text-white'}
+            size="sm"
           >
             {status.charAt(0).toUpperCase() + status.slice(1)}
           </Button>
@@ -95,19 +95,19 @@ export default function Library() {
             <div key={i} className="card-surface p-5">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex gap-2">
-                  <Skeleton className="h-5 w-16 rounded bg-white/10" />
-                  <Skeleton className="h-5 w-14 rounded bg-white/10" />
+                  <Skeleton className="h-5 w-16 rounded" />
+                  <Skeleton className="h-5 w-14 rounded" />
                 </div>
-                <Skeleton className="h-5 w-16 rounded bg-white/5" />
+                <Skeleton className="h-5 w-16 rounded" />
               </div>
-              <Skeleton className="h-5 w-full mb-2 bg-white/10" />
-              <Skeleton className="h-4 w-full mb-1 bg-white/5" />
-              <Skeleton className="h-4 w-3/4 mb-4 bg-white/5" />
-              <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                <Skeleton className="h-4 w-24 bg-white/5" />
+              <Skeleton className="h-5 w-full mb-2" />
+              <Skeleton className="h-4 w-full mb-1" />
+              <Skeleton className="h-4 w-3/4 mb-4" />
+              <div className="flex items-center justify-between pt-3 border-t border-border">
+                <Skeleton className="h-4 w-24" />
                 <div className="flex gap-2">
-                  <Skeleton className="h-8 w-8 rounded bg-white/5" />
-                  <Skeleton className="h-8 w-8 rounded bg-white/5" />
+                  <Skeleton className="h-8 w-8 rounded" />
+                  <Skeleton className="h-8 w-8 rounded" />
                 </div>
               </div>
             </div>
@@ -119,7 +119,7 @@ export default function Library() {
           title="No posts found"
           description="Start creating content to build your library"
           action={
-            <Button onClick={() => navigate('/editor')} className="btn-primary">
+            <Button onClick={() => navigate('/editor')}>
               Create your first post
             </Button>
           }
@@ -130,7 +130,7 @@ export default function Library() {
           {posts.map((post) => (
             <div
               key={post.id}
-              className="card-surface p-5 hover:border-white/20 transition-all duration-200 group"
+              className="card-surface p-5 hover:shadow-md transition-all duration-200 group"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex gap-2">
@@ -143,64 +143,64 @@ export default function Library() {
                 </div>
                 <span className={cn(
                   "text-xs px-2 py-0.5 rounded",
-                  post.status === 'draft' ? 'bg-neutral-500/20 text-neutral-400' :
-                  post.status === 'scheduled' ? 'bg-blue-500/20 text-blue-400' :
-                  'bg-emerald-500/20 text-emerald-400'
+                  post.status === 'draft' ? 'bg-muted text-muted-foreground' :
+                  post.status === 'scheduled' ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400' :
+                  'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
                 )}>
                   {post.status}
                 </span>
               </div>
 
-              <h3 className="font-medium text-white mb-2 line-clamp-1">
+              <h3 className="font-medium text-foreground mb-2 line-clamp-1">
                 {post.hook || post.title || 'Untitled'}
               </h3>
-              
-              <p className="text-sm text-neutral-500 line-clamp-2 mb-4">
+
+              <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
                 {post.rehook || post.content?.slice(0, 100) || 'No content yet...'}
               </p>
 
               {post.scheduled_date && (
-                <div className="flex items-center gap-2 text-xs text-neutral-500 mb-4">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
                   <Calendar className="w-3 h-3" />
                   {formatDate(post.scheduled_date)}
                 </div>
               )}
 
-              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-2 pt-3 border-t border-border mt-auto lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => navigate(`/editor/${post.id}`)}
                   data-testid={`edit-post-${post.id}-btn`}
-                  className="flex-1 text-neutral-400 hover:text-white"
+                  className="flex-1 h-10"
                 >
                   <Edit3 className="w-4 h-4 mr-2" />
                   Edit
                 </Button>
-                
+
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button
                       variant="ghost"
                       size="sm"
                       data-testid={`delete-post-${post.id}-btn`}
-                      className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                      className="h-10 w-10 text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </AlertDialogTrigger>
-                  <AlertDialogContent className="bg-charcoal border-white/10">
+                  <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle className="text-white">Delete Post?</AlertDialogTitle>
-                      <AlertDialogDescription className="text-neutral-400">
+                      <AlertDialogTitle>Delete Post?</AlertDialogTitle>
+                      <AlertDialogDescription>
                         This action cannot be undone. This will permanently delete your post.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel className="border-white/10 text-white hover:bg-white/10">Cancel</AlertDialogCancel>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() => handleDelete(post.id)}
-                        className="bg-red-500 hover:bg-red-600"
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
                         Delete
                       </AlertDialogAction>

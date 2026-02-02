@@ -9,14 +9,14 @@ const tierIcons = {
 };
 
 const tierColors = {
-  free: 'text-neutral-400',
-  basic: 'text-electric-blue',
-  premium: 'text-amber-400',
+  free: 'text-muted-foreground',
+  basic: 'text-primary',
+  premium: 'text-amber-600 dark:text-amber-400',
 };
 
 const tierBgColors = {
-  free: 'bg-neutral-800/50',
-  basic: 'bg-electric-blue/10 border-electric-blue/30',
+  free: 'bg-muted/50',
+  basic: 'bg-primary/10 border-primary/30',
   premium: 'bg-amber-500/10 border-amber-500/30',
 };
 
@@ -75,13 +75,13 @@ export function PricingCard({
       className={cn(
         "relative flex flex-col p-6 rounded-2xl border transition-all",
         tierBgColors[tier],
-        isPopular && "ring-2 ring-electric-blue scale-105 z-10",
-        !isPopular && "border-white/10"
+        isPopular && "ring-2 ring-primary scale-105 z-10",
+        !isPopular && "border-border"
       )}
       data-testid={`pricing-card-${tier}`}
     >
       {isPopular && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-electric-blue text-white text-xs font-semibold rounded-full">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-primary text-primary-foreground text-xs font-semibold rounded-full">
           Most Popular
         </div>
       )}
@@ -91,19 +91,19 @@ export function PricingCard({
           <Icon className={cn("w-5 h-5", tierColors[tier])} />
         </div>
         <div>
-          <h3 className="font-heading text-xl font-bold text-white capitalize">{tier}</h3>
-          {tier === 'free' && <p className="text-xs text-neutral-500">Get started</p>}
-          {tier === 'basic' && <p className="text-xs text-neutral-500">For active creators</p>}
-          {tier === 'premium' && <p className="text-xs text-neutral-500">Power users</p>}
+          <h3 className="font-heading text-xl font-bold text-foreground capitalize">{tier}</h3>
+          {tier === 'free' && <p className="text-xs text-muted-foreground">Get started</p>}
+          {tier === 'basic' && <p className="text-xs text-muted-foreground">For active creators</p>}
+          {tier === 'premium' && <p className="text-xs text-muted-foreground">Power users</p>}
         </div>
       </div>
 
       <div className="mb-6">
         <div className="flex items-baseline gap-1">
-          <span className="text-4xl font-black text-white">
+          <span className="text-4xl font-black text-foreground">
             {isFree ? 'Free' : displayPrice.replace('/mo', '')}
           </span>
-          {!isFree && <span className="text-neutral-400">/mo</span>}
+          {!isFree && <span className="text-muted-foreground">/mo</span>}
         </div>
         {!isFree && billingCycle === 'annual' && (
           <p className="text-sm text-emerald-400 mt-1">
@@ -116,7 +116,7 @@ export function PricingCard({
         {features[tier].map((feature, idx) => (
           <li key={idx} className="flex items-start gap-2 text-sm">
             <Check className={cn("w-4 h-4 mt-0.5 shrink-0", tierColors[tier])} />
-            <span className="text-neutral-300">{feature}</span>
+            <span className="text-foreground/80">{feature}</span>
           </li>
         ))}
       </ul>
@@ -127,9 +127,9 @@ export function PricingCard({
         data-testid={`select-${tier}-btn`}
         className={cn(
           "w-full",
-          isCurrentPlan && "bg-neutral-700 cursor-default",
+          isCurrentPlan && "bg-muted cursor-default",
           !isCurrentPlan && !isFree && "btn-primary",
-          isFree && "bg-neutral-800 text-neutral-400 cursor-default"
+          isFree && "bg-muted text-muted-foreground cursor-default"
         )}
       >
         {isCurrentPlan ? 'Current Plan' : isFree ? 'Free Forever' : `Upgrade to ${tier}`}

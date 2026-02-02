@@ -101,7 +101,7 @@ export default function Settings() {
         navigate('/settings', { replace: true });
         return;
       }
-      
+
       // Continue polling
       setTimeout(() => pollCheckoutStatus(sessionId, attempts + 1), pollInterval);
     } catch (error) {
@@ -268,7 +268,7 @@ export default function Settings() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-electric-blue" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -276,19 +276,19 @@ export default function Settings() {
   const hasLinkedInCredentials = settings.linkedin_client_id && settings.linkedin_client_secret && settings.linkedin_redirect_uri;
 
   const tierColors = {
-    free: 'text-neutral-400',
-    basic: 'text-electric-blue',
-    premium: 'text-amber-400',
+    free: 'text-muted-foreground',
+    basic: 'text-primary',
+    premium: 'text-amber-600 dark:text-amber-400',
   };
 
   return (
-    <div className="p-8 max-w-2xl mx-auto space-y-8">
+    <div className="p-6 md:p-8 max-w-2xl mx-auto space-y-6 md:space-y-8">
       {/* Header */}
       <div>
-        <h1 className="font-heading text-4xl font-black uppercase tracking-tight text-white">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
           Settings
         </h1>
-        <p className="text-neutral-400 mt-2">Configure your AI model and integrations</p>
+        <p className="text-muted-foreground mt-2">Configure your AI model and integrations</p>
       </div>
 
       {/* Grace Period Banner */}
@@ -296,33 +296,33 @@ export default function Settings() {
 
       {/* Subscription Card */}
       <div className="card-surface p-6 space-y-6">
-        <div className="flex items-center gap-3 pb-4 border-b border-white/10">
+        <div className="flex items-center gap-3 pb-4 border-b border-border">
           <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
-            <Crown className="w-5 h-5 text-amber-400" />
+            <Crown className="w-5 h-5 text-amber-600 dark:text-amber-400" />
           </div>
           <div>
-            <h2 className="font-heading text-lg font-semibold uppercase tracking-wide text-white">
+            <h2 className="text-lg font-semibold text-foreground">
               Subscription
             </h2>
-            <p className="text-xs text-neutral-500">Manage your plan and billing</p>
+            <p className="text-xs text-muted-foreground">Manage your plan and billing</p>
           </div>
         </div>
 
         {/* Current Plan */}
-        <div className="flex items-center justify-between p-4 rounded-lg bg-neutral-900/50 border border-white/10">
+        <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-border">
           <div className="flex items-center gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-white font-medium">Current Plan:</span>
+                <span className="text-foreground font-medium">Current Plan:</span>
                 <span className={cn("font-semibold capitalize", tierColors[effectiveTier])}>
                   {effectiveTier}
                 </span>
                 {subscription?.status === 'active' && tier !== 'free' && (
-                  <Check className="w-4 h-4 text-emerald-400" />
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 )}
               </div>
               {tier !== 'free' && subscription?.billing_cycle && (
-                <p className="text-xs text-neutral-400 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   <Calendar className="w-3 h-3 inline mr-1" />
                   {subscription.billing_cycle === 'annual' ? 'Annual' : 'Monthly'} billing
                   {subscription?.current_period_end && (
@@ -331,7 +331,7 @@ export default function Settings() {
                 </p>
               )}
               {subscription?.cancel_at_period_end && (
-                <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" />
                   Cancels at end of billing period
                 </p>
@@ -340,34 +340,34 @@ export default function Settings() {
           </div>
           <div className="flex gap-2">
             {tier === 'free' ? (
-              <Button onClick={() => navigate('/pricing')} className="btn-primary" data-testid="upgrade-btn">
+              <Button onClick={() => navigate('/pricing')} data-testid="upgrade-btn">
                 Upgrade
               </Button>
             ) : subscription?.cancel_at_period_end ? (
-              <Button onClick={handleReactivateSubscription} className="btn-primary" data-testid="reactivate-btn">
+              <Button onClick={handleReactivateSubscription} data-testid="reactivate-btn">
                 Reactivate
               </Button>
             ) : (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="ghost" className="text-neutral-400 hover:text-red-400" data-testid="cancel-sub-btn">
+                  <Button variant="ghost" className="text-muted-foreground hover:text-destructive" data-testid="cancel-sub-btn">
                     Cancel Plan
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent className="bg-charcoal border-white/10">
+                <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle className="text-white">Cancel Subscription?</AlertDialogTitle>
-                    <AlertDialogDescription className="text-neutral-400">
-                      Your subscription will remain active until the end of the current billing period. 
+                    <AlertDialogTitle>Cancel Subscription?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Your subscription will remain active until the end of the current billing period.
                       All your content will be preserved, but some features will be restricted.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel className="border-white/10 text-white hover:bg-white/10">Keep Plan</AlertDialogCancel>
+                    <AlertDialogCancel>Keep Plan</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleCancelSubscription}
                       disabled={cancellingSubscription}
-                      className="bg-red-500 hover:bg-red-600"
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
                       {cancellingSubscription && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                       Cancel Subscription
@@ -381,11 +381,11 @@ export default function Settings() {
 
         {/* Payment Method (if paid) */}
         {tier !== 'free' && subscription?.payment_method_last4 && (
-          <div className="flex items-center justify-between p-4 rounded-lg bg-neutral-900/50 border border-white/10">
+          <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-border">
             <div className="flex items-center gap-3">
-              <CreditCard className="w-5 h-5 text-neutral-400" />
+              <CreditCard className="w-5 h-5 text-muted-foreground" />
               <div>
-                <p className="text-white font-medium">
+                <p className="text-foreground font-medium">
                   {subscription.payment_method_brand?.charAt(0).toUpperCase() + subscription.payment_method_brand?.slice(1) || 'Card'} ending in {subscription.payment_method_last4}
                 </p>
               </div>
@@ -397,9 +397,9 @@ export default function Settings() {
         <UsageDashboard />
 
         {/* View All Plans */}
-        <Button 
-          variant="outline" 
-          className="w-full border-white/10 text-neutral-300 hover:text-white"
+        <Button
+          variant="outline"
+          className="w-full"
           onClick={() => navigate('/pricing')}
           data-testid="view-plans-btn"
         >
@@ -409,46 +409,46 @@ export default function Settings() {
 
       {/* LinkedIn Integration Card */}
       <div className="card-surface p-6 space-y-6">
-        <div className="flex items-center gap-3 pb-4 border-b border-white/10">
+        <div className="flex items-center gap-3 pb-4 border-b border-border">
           <div className="w-10 h-10 rounded-lg bg-[#0077B5]/20 flex items-center justify-center">
             <Linkedin className="w-5 h-5 text-[#0077B5]" />
           </div>
           <div>
-            <h2 className="font-heading text-lg font-semibold uppercase tracking-wide text-white">
+            <h2 className="text-lg font-semibold text-foreground">
               LinkedIn Integration
             </h2>
-            <p className="text-xs text-neutral-500">Connect for 1-click publishing to LinkedIn</p>
+            <p className="text-xs text-muted-foreground">Connect for 1-click publishing to LinkedIn</p>
           </div>
         </div>
 
         {settings.linkedin_connected ? (
           <div className="flex items-center justify-between p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
             <div className="flex items-center gap-3">
-              <Check className="w-5 h-5 text-emerald-500" />
+              <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-500" />
               <div>
-                <p className="text-white font-medium">Connected as {settings.linkedin_name}</p>
-                <p className="text-xs text-neutral-400">You can publish directly to LinkedIn</p>
+                <p className="text-foreground font-medium">Connected as {settings.linkedin_name}</p>
+                <p className="text-xs text-muted-foreground">You can publish directly to LinkedIn</p>
               </div>
             </div>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300">
+                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
                   <Unlink className="w-4 h-4 mr-2" />
                   Disconnect
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent className="bg-charcoal border-white/10">
+              <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle className="text-white">Disconnect LinkedIn?</AlertDialogTitle>
-                  <AlertDialogDescription className="text-neutral-400">
+                  <AlertDialogTitle>Disconnect LinkedIn?</AlertDialogTitle>
+                  <AlertDialogDescription>
                     You will no longer be able to publish directly to LinkedIn. You can reconnect at any time.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel className="border-white/10 text-white hover:bg-white/10">Cancel</AlertDialogCancel>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleDisconnectLinkedIn}
-                    className="bg-red-500 hover:bg-red-600"
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
                     Disconnect
                   </AlertDialogAction>
@@ -461,73 +461,73 @@ export default function Settings() {
             {/* API Credentials Configuration */}
             <Collapsible open={linkedInConfigOpen} onOpenChange={setLinkedInConfigOpen}>
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="w-full justify-between text-neutral-400 hover:text-white hover:bg-white/5 p-3 h-auto">
+                <Button variant="ghost" className="w-full justify-between p-3 h-auto">
                   <div className="flex items-center gap-2">
                     <Settings2 className="w-4 h-4" />
                     <span>Configure API Credentials</span>
                   </div>
                   <span className={cn(
                     "text-xs px-2 py-0.5 rounded",
-                    hasLinkedInCredentials ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
+                    hasLinkedInCredentials ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" : "bg-amber-500/20 text-amber-600 dark:text-amber-400"
                   )}>
                     {hasLinkedInCredentials ? 'Configured' : 'Required'}
                   </span>
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-4 pt-4">
-                <div className="p-4 rounded-lg bg-neutral-900/50 border border-white/5 space-y-4">
+                <div className="p-4 rounded-lg bg-muted/50 border border-border space-y-4">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-neutral-400">
+                    <p className="text-sm text-muted-foreground">
                       Get your LinkedIn API credentials from the Developer Portal
                     </p>
                     <a
                       href="https://www.linkedin.com/developers/apps"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-electric-blue hover:underline text-sm flex items-center gap-1"
+                      className="text-primary hover:underline text-sm flex items-center gap-1"
                     >
                       Open Portal <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
 
                   <div>
-                    <Label className="text-neutral-400 text-xs uppercase tracking-wider">Client ID</Label>
+                    <Label className="text-muted-foreground text-xs uppercase tracking-wider">Client ID</Label>
                     <Input
                       value={settings.linkedin_client_id}
                       onChange={(e) => setSettings(prev => ({ ...prev, linkedin_client_id: e.target.value }))}
                       placeholder="Your LinkedIn App Client ID"
                       data-testid="linkedin-client-id-input"
-                      className="bg-black/30 border-white/10 font-mono text-sm"
+                      className="font-mono text-sm"
                     />
                   </div>
 
                   <div>
-                    <Label className="text-neutral-400 text-xs uppercase tracking-wider">Client Secret</Label>
+                    <Label className="text-muted-foreground text-xs uppercase tracking-wider">Client Secret</Label>
                     <Input
                       type="password"
                       value={settings.linkedin_client_secret}
                       onChange={(e) => setSettings(prev => ({ ...prev, linkedin_client_secret: e.target.value }))}
                       placeholder="Your LinkedIn App Client Secret"
                       data-testid="linkedin-client-secret-input"
-                      className="bg-black/30 border-white/10 font-mono text-sm"
+                      className="font-mono text-sm"
                     />
                   </div>
 
                   <div>
-                    <Label className="text-neutral-400 text-xs uppercase tracking-wider">Redirect URI</Label>
+                    <Label className="text-muted-foreground text-xs uppercase tracking-wider">Redirect URI</Label>
                     <Input
                       value={settings.linkedin_redirect_uri}
                       onChange={(e) => setSettings(prev => ({ ...prev, linkedin_redirect_uri: e.target.value }))}
                       placeholder="https://your-domain.com/api/linkedin/callback"
                       data-testid="linkedin-redirect-uri-input"
-                      className="bg-black/30 border-white/10 font-mono text-sm"
+                      className="font-mono text-sm"
                     />
-                    <p className="text-xs text-neutral-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Add this URL to your LinkedIn App&apos;s Authorized Redirect URLs
                     </p>
                   </div>
 
-                  <Button onClick={handleSave} disabled={saving} size="sm" className="w-full btn-primary">
+                  <Button onClick={handleSave} disabled={saving} size="sm" className="w-full">
                     {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                     Save Credentials
                   </Button>
@@ -544,7 +544,7 @@ export default function Settings() {
                 "w-full text-white",
                 hasLinkedInCredentials
                   ? "bg-[#0077B5] hover:bg-[#006097]"
-                  : "bg-neutral-700 cursor-not-allowed"
+                  : "bg-muted text-muted-foreground cursor-not-allowed"
               )}
             >
               {connectingLinkedIn ? (
@@ -560,29 +560,29 @@ export default function Settings() {
 
       {/* AI Configuration Card */}
       <div className="card-surface p-6 space-y-6">
-        <div className="flex items-center gap-3 pb-4 border-b border-white/10">
-          <div className="w-10 h-10 rounded-lg bg-electric-blue/20 flex items-center justify-center">
-            <Cpu className="w-5 h-5 text-electric-blue" />
+        <div className="flex items-center gap-3 pb-4 border-b border-border">
+          <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+            <Cpu className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h2 className="font-heading text-lg font-semibold uppercase tracking-wide text-white">
+            <h2 className="text-lg font-semibold text-foreground">
               AI Configuration
             </h2>
-            <p className="text-xs text-neutral-500">Choose your AI model for content generation</p>
+            <p className="text-xs text-muted-foreground">Choose your AI model for content generation</p>
           </div>
         </div>
 
         {/* Provider Selection */}
         <div className="space-y-2">
-          <Label className="text-neutral-400 text-xs uppercase tracking-wider">AI Provider</Label>
+          <Label className="text-muted-foreground text-xs uppercase tracking-wider">AI Provider</Label>
           <Select
             value={settings.ai_provider}
             onValueChange={handleProviderChange}
           >
-            <SelectTrigger data-testid="ai-provider-select" className="bg-black/30 border-white/10">
+            <SelectTrigger data-testid="ai-provider-select">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-charcoal border-white/10">
+            <SelectContent>
               {PROVIDERS.map((provider) => (
                 <SelectItem key={provider.value} value={provider.value}>
                   <span className="flex items-center gap-2">
@@ -597,15 +597,15 @@ export default function Settings() {
 
         {/* Model Selection */}
         <div className="space-y-2">
-          <Label className="text-neutral-400 text-xs uppercase tracking-wider">Model</Label>
+          <Label className="text-muted-foreground text-xs uppercase tracking-wider">Model</Label>
           <Select
             value={settings.ai_model}
             onValueChange={(model) => setSettings(prev => ({ ...prev, ai_model: model }))}
           >
-            <SelectTrigger data-testid="ai-model-select" className="bg-black/30 border-white/10">
+            <SelectTrigger data-testid="ai-model-select">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-charcoal border-white/10">
+            <SelectContent>
               {MODELS[settings.ai_provider]?.map((model) => (
                 <SelectItem key={model.value} value={model.value}>
                   {model.label}
@@ -617,7 +617,7 @@ export default function Settings() {
 
         {/* API Key */}
         <div className="space-y-2">
-          <Label className="text-neutral-400 text-xs uppercase tracking-wider">
+          <Label className="text-muted-foreground text-xs uppercase tracking-wider">
             {settings.ai_provider === 'anthropic' ? 'Anthropic' :
              settings.ai_provider === 'openai' ? 'OpenAI' : 'Google'} API Key *
           </Label>
@@ -632,8 +632,8 @@ export default function Settings() {
               placeholder="Enter your API key..."
               data-testid="api-key-input"
               className={cn(
-                "bg-black/30 border-white/10 focus:border-electric-blue font-mono pr-20",
-                apiKeyError && "border-red-500"
+                "font-mono pr-20",
+                apiKeyError && "border-destructive"
               )}
               aria-invalid={!!apiKeyError}
               aria-describedby={apiKeyError ? "api-key-error" : "api-key-help"}
@@ -643,7 +643,7 @@ export default function Settings() {
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 text-neutral-400 hover:text-white"
+                className="h-7 w-7"
                 onClick={() => setShowApiKey(!showApiKey)}
                 aria-label={showApiKey ? 'Hide API key' : 'Show API key'}
               >
@@ -654,7 +654,7 @@ export default function Settings() {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-neutral-400 hover:text-white"
+                  className="h-7 w-7"
                   onClick={() => {
                     navigator.clipboard.writeText(settings.api_key);
                     toast.success('API key copied to clipboard');
@@ -667,9 +667,9 @@ export default function Settings() {
             </div>
           </div>
           {apiKeyError && (
-            <p id="api-key-error" className="text-xs text-red-400">{apiKeyError}</p>
+            <p id="api-key-error" className="text-xs text-destructive">{apiKeyError}</p>
           )}
-          <p id="api-key-help" className="text-xs text-neutral-500">
+          <p id="api-key-help" className="text-xs text-muted-foreground">
             {settings.ai_provider === 'anthropic' && 'Get your key at console.anthropic.com'}
             {settings.ai_provider === 'openai' && 'Get your key at platform.openai.com'}
             {settings.ai_provider === 'gemini' && 'Get your key at ai.google.dev'}
@@ -683,7 +683,7 @@ export default function Settings() {
           onClick={handleSave}
           disabled={saving}
           data-testid="save-settings-btn"
-          className="btn-primary px-8"
+          className="px-8"
         >
           {saving ? (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -696,25 +696,25 @@ export default function Settings() {
 
       {/* Quick Reference */}
       <div className="card-surface p-6 mt-8">
-        <h3 className="font-heading text-sm font-semibold uppercase tracking-wider text-neutral-400 mb-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
           Quick Reference: 4-3-2-1 Strategy
         </h3>
         <div className="space-y-3 text-sm">
           <div className="flex items-center gap-3">
-            <span className="w-6 h-6 rounded bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold">4</span>
-            <span className="text-neutral-300">Posts per week for optimal algorithm engagement</span>
+            <span className="w-6 h-6 rounded bg-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold">4</span>
+            <span className="text-foreground/80">Posts per week for optimal algorithm engagement</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="w-6 h-6 rounded bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold">3</span>
-            <span className="text-neutral-300">Content pillars: Growth, TAM, Sales</span>
+            <span className="w-6 h-6 rounded bg-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400 font-bold">3</span>
+            <span className="text-foreground/80">Content pillars: Growth, TAM, Sales</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="w-6 h-6 rounded bg-purple-500/20 flex items-center justify-center text-purple-400 font-bold">2</span>
-            <span className="text-neutral-300">Frameworks: SLAY (narrative) + PAS (problem-solving)</span>
+            <span className="w-6 h-6 rounded bg-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-400 font-bold">2</span>
+            <span className="text-foreground/80">Frameworks: SLAY (narrative) + PAS (problem-solving)</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="w-6 h-6 rounded bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold">1</span>
-            <span className="text-neutral-300">Clear CTA in every post</span>
+            <span className="w-6 h-6 rounded bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold">1</span>
+            <span className="text-foreground/80">Clear CTA in every post</span>
           </div>
         </div>
       </div>

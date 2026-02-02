@@ -148,14 +148,14 @@ export default function Editor() {
       toast.error('Please save the post first');
       return;
     }
-    
+
     setPublishingToLinkedIn(true);
     try {
       const response = await publishToLinkedIn(postId);
-      setPost(prev => ({ 
-        ...prev, 
+      setPost(prev => ({
+        ...prev,
         status: 'published',
-        linkedin_post_id: response.data.linkedin_post_id 
+        linkedin_post_id: response.data.linkedin_post_id
       }));
       toast.success('Published to LinkedIn! 30-minute engagement timer started.');
     } catch (error) {
@@ -171,7 +171,7 @@ export default function Editor() {
       const response = await createPost(post);
       const newPostId = response.data.id;
       navigate(`/editor/${newPostId}`);
-      
+
       // Then schedule
       const dateStr = scheduleDate ? scheduleDate.toISOString().split('T')[0] : null;
       if (dateStr) {
@@ -184,8 +184,8 @@ export default function Editor() {
       const dateStr = scheduleDate ? scheduleDate.toISOString().split('T')[0] : null;
       if (dateStr) {
         await schedulePost(postId, dateStr, parseInt(scheduleSlot), scheduleTime);
-        setPost(prev => ({ 
-          ...prev, 
+        setPost(prev => ({
+          ...prev,
           status: 'scheduled',
           scheduled_date: dateStr,
           scheduled_slot: parseInt(scheduleSlot),
@@ -202,7 +202,7 @@ export default function Editor() {
       toast.error('Please save the post first');
       return;
     }
-    
+
     setPublishing(true);
     try {
       await publishPost(postId);
@@ -233,7 +233,7 @@ export default function Editor() {
       const generated = response.data.content;
       const hookMatch = generated.match(/HOOK:\s*(.+?)(?:\n|REHOOK)/s);
       const rehookMatch = generated.match(/REHOOK:\s*(.+?)(?:\n\n|\[)/s);
-      
+
       setPost(prev => ({
         ...prev,
         hook: hookMatch ? hookMatch[1].trim() : prev.hook,
@@ -288,7 +288,7 @@ export default function Editor() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-electric-blue" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -296,14 +296,14 @@ export default function Editor() {
   return (
     <div className="h-screen flex flex-col">
       {/* Top Bar */}
-      <header className="glass border-b border-white/10 px-6 py-4 flex items-center justify-between">
+      <header className="bg-background/95 backdrop-blur-md border-b border-border px-4 md:px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate(-1)}
             data-testid="editor-back-btn"
-            className="text-neutral-400 hover:text-white md:hidden"
+            className="md:hidden"
             aria-label="Go back"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -314,39 +314,39 @@ export default function Editor() {
               <BreadcrumbList>
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild>
-                    <button onClick={() => navigate('/')} className="flex items-center gap-1 text-neutral-400 hover:text-white">
+                    <button onClick={() => navigate('/')} className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
                       <Home className="w-3 h-3" />
                       Dashboard
                     </button>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
-                <BreadcrumbSeparator className="text-neutral-600" />
+                <BreadcrumbSeparator />
                 {postId && (
                   <>
                     <BreadcrumbItem>
                       <BreadcrumbLink asChild>
-                        <button onClick={() => navigate('/library')} className="text-neutral-400 hover:text-white">
+                        <button onClick={() => navigate('/library')} className="text-muted-foreground hover:text-foreground">
                           Library
                         </button>
                       </BreadcrumbLink>
                     </BreadcrumbItem>
-                    <BreadcrumbSeparator className="text-neutral-600" />
+                    <BreadcrumbSeparator />
                   </>
                 )}
                 <BreadcrumbItem>
-                  <BreadcrumbPage className="text-white">
+                  <BreadcrumbPage className="text-foreground">
                     {postId ? 'Edit Post' : 'Create Post'}
                   </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
-            <h1 className="font-heading text-xl font-bold uppercase tracking-wide text-white">
+            <h1 className="text-xl font-bold text-foreground">
               {postId ? 'Edit Post' : 'Create Post'}
             </h1>
             <p className={cn(
               "text-xs",
-              post.status === 'published' ? 'text-emerald-400' :
-              post.status === 'scheduled' ? 'text-electric-blue' : 'text-neutral-500'
+              post.status === 'published' ? 'text-emerald-600 dark:text-emerald-400' :
+              post.status === 'scheduled' ? 'text-primary' : 'text-muted-foreground'
             )}>
               {post.status === 'published' ? 'Published' :
                post.status === 'scheduled' ? `Scheduled: ${formatDate(post.scheduled_date)}` : 'Draft'}
@@ -354,7 +354,7 @@ export default function Editor() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
           {/* Schedule Dialog */}
           <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
             <DialogTrigger asChild>
@@ -362,53 +362,53 @@ export default function Editor() {
                 variant="outline"
                 disabled={post.status === 'published'}
                 data-testid="schedule-post-btn"
-                className="border-white/10 hover:bg-white/5"
+                size="sm"
+                className="hidden sm:flex"
               >
                 <Calendar className="w-4 h-4 mr-2" />
                 Schedule
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-charcoal border-white/10">
+            <DialogContent>
               <DialogHeader>
-                <DialogTitle className="text-white">Schedule Post</DialogTitle>
-                <DialogDescription className="text-neutral-400">
+                <DialogTitle>Schedule Post</DialogTitle>
+                <DialogDescription>
                   Choose a date and time slot for your post
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Date</label>
+                  <label className="text-xs text-muted-foreground uppercase tracking-wider mb-2 block">Date</label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        className="w-full justify-start text-left font-normal border-white/10 bg-black/30"
+                        className="w-full justify-start text-left font-normal"
                         data-testid="schedule-date-picker"
                       >
                         <Calendar className="mr-2 h-4 w-4" />
                         {scheduleDate ? formatDate(scheduleDate.toISOString()) : "Pick a date"}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-charcoal border-white/10" align="start">
+                    <PopoverContent className="w-auto p-0" align="start">
                       <CalendarComponent
                         mode="single"
                         selected={scheduleDate}
                         onSelect={setScheduleDate}
                         initialFocus
-                        className="bg-charcoal"
                       />
                     </PopoverContent>
                   </Popover>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Slot (1-4)</label>
+                    <label className="text-xs text-muted-foreground uppercase tracking-wider mb-2 block">Slot (1-4)</label>
                     <Select value={scheduleSlot} onValueChange={setScheduleSlot}>
-                      <SelectTrigger className="bg-black/30 border-white/10" data-testid="schedule-slot-select">
+                      <SelectTrigger data-testid="schedule-slot-select">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-charcoal border-white/10">
+                      <SelectContent>
                         <SelectItem value="0">Slot 1 (Morning)</SelectItem>
                         <SelectItem value="1">Slot 2 (Midday)</SelectItem>
                         <SelectItem value="2">Slot 3 (Afternoon)</SelectItem>
@@ -417,19 +417,18 @@ export default function Editor() {
                     </Select>
                   </div>
                   <div>
-                    <label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Time</label>
+                    <label className="text-xs text-muted-foreground uppercase tracking-wider mb-2 block">Time</label>
                     <Input
                       type="time"
                       value={scheduleTime}
                       onChange={(e) => setScheduleTime(e.target.value)}
-                      className="bg-black/30 border-white/10"
                       data-testid="schedule-time-input"
                     />
                   </div>
                 </div>
               </div>
               <DialogFooter>
-                <Button onClick={handleSchedule} className="btn-primary" data-testid="confirm-schedule-btn">
+                <Button onClick={handleSchedule} data-testid="confirm-schedule-btn">
                   <Calendar className="w-4 h-4 mr-2" />
                   Confirm Schedule
                 </Button>
@@ -443,14 +442,15 @@ export default function Editor() {
               onClick={handlePublishToLinkedIn}
               disabled={publishingToLinkedIn}
               data-testid="publish-to-linkedin-btn"
-              className="bg-[#0077B5] hover:bg-[#006097] text-white"
+              size="sm"
+              className="hidden md:flex bg-[#0077B5] hover:bg-[#006097] text-white"
             >
               {publishingToLinkedIn ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
                 <Linkedin className="w-4 h-4 mr-2" />
               )}
-              Publish to LinkedIn
+              LinkedIn
             </Button>
           )}
 
@@ -460,14 +460,15 @@ export default function Editor() {
               onClick={handlePublish}
               disabled={publishing}
               data-testid="publish-post-btn"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              size="sm"
+              className="hidden sm:flex bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               {publishing ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
                 <Send className="w-4 h-4 mr-2" />
               )}
-              Publish Now
+              Publish
             </Button>
           )}
 
@@ -476,19 +477,19 @@ export default function Editor() {
             onClick={handleCopyToClipboard}
             disabled={!post.hook && !post.content}
             data-testid="copy-to-clipboard-btn"
-            className="border-white/10 hover:bg-white/5"
+            size="sm"
           >
-            {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-            {copied ? 'Copied!' : 'Copy'}
+            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            <span className="hidden sm:inline ml-2">{copied ? 'Copied!' : 'Copy'}</span>
           </Button>
           <Button
             onClick={handleSave}
             disabled={saving}
             data-testid="save-post-btn"
-            className="btn-primary"
+            size="sm"
           >
-            {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-            Save
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            <span className="hidden sm:inline ml-2">Save</span>
           </Button>
         </div>
       </header>
@@ -496,28 +497,28 @@ export default function Editor() {
       {/* Main Content */}
       <div className="flex-1 grid grid-cols-12 overflow-hidden">
         {/* Editor Pane */}
-        <div className="col-span-12 lg:col-span-8 border-r border-white/10 p-6 overflow-y-auto">
-          <div className="max-w-3xl mx-auto space-y-8">
+        <div className="col-span-12 lg:col-span-8 border-r border-border p-4 md:p-6 overflow-y-auto">
+          <div className="max-w-3xl mx-auto space-y-6 md:space-y-8">
             {/* Topic/Title */}
             <div>
-              <label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Topic</label>
+              <label className="text-xs text-muted-foreground uppercase tracking-wider mb-2 block">Topic</label>
               <Input
                 value={post.title}
                 onChange={(e) => setPost(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="What's this post about?"
                 data-testid="post-topic-input"
-                className="text-lg bg-black/30 border-white/10 focus:border-electric-blue"
+                className="text-lg"
               />
             </div>
 
             {/* Framework & Pillar Selection */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div>
-                <label className="text-xs text-neutral-500 uppercase tracking-wider mb-3 block">Framework</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-3 block">Framework</label>
                 <FrameworkSelector value={post.framework} onChange={handleFrameworkChange} />
               </div>
               <div>
-                <label className="text-xs text-neutral-500 uppercase tracking-wider mb-3 block">Content Pillar</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-3 block">Content Pillar</label>
                 <PillarSelector value={post.pillar} onChange={(pillar) => setPost(prev => ({ ...prev, pillar }))} />
               </div>
             </div>
@@ -528,7 +529,8 @@ export default function Editor() {
                 onClick={handleGenerate}
                 disabled={generating || !post.title}
                 data-testid="generate-content-btn"
-                className="btn-primary px-8 py-3 text-lg animate-pulse-glow"
+                size="lg"
+                className="px-8"
               >
                 {generating ? (
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
@@ -541,46 +543,45 @@ export default function Editor() {
 
             {/* Hook Section */}
             <div className="space-y-4">
-              <label className="text-xs text-neutral-500 uppercase tracking-wider block">Hook (8 words max)</label>
+              <label className="text-xs text-muted-foreground uppercase tracking-wider block">Hook (8 words max)</label>
               <Input
                 value={post.hook}
                 onChange={(e) => setPost(prev => ({ ...prev, hook: e.target.value }))}
                 placeholder="Your attention-grabbing first line..."
                 data-testid="post-hook-input"
-                className="text-xl font-semibold bg-black/30 border-white/10 focus:border-electric-blue"
+                className="text-xl font-semibold"
               />
               <HookValidator hook={post.hook} />
             </div>
 
             {/* Re-hook */}
             <div>
-              <label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Re-hook</label>
+              <label className="text-xs text-muted-foreground uppercase tracking-wider mb-2 block">Re-hook</label>
               <Input
                 value={post.rehook}
                 onChange={(e) => setPost(prev => ({ ...prev, rehook: e.target.value }))}
                 placeholder="Your compelling second line with proof..."
                 data-testid="post-rehook-input"
-                className="bg-black/30 border-white/10 focus:border-electric-blue"
               />
             </div>
 
             {/* Content Tabs */}
             <Tabs defaultValue="freeform" className="w-full">
-              <TabsList className="bg-black/30 border border-white/10">
+              <TabsList>
                 <TabsTrigger value="freeform" data-testid="tab-freeform">Freeform</TabsTrigger>
                 <TabsTrigger value="framework" data-testid="tab-framework">Framework</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="freeform" className="mt-4">
                 <Textarea
                   value={post.content}
                   onChange={(e) => setPost(prev => ({ ...prev, content: e.target.value }))}
                   placeholder="Write your post content..."
                   data-testid="post-content-textarea"
-                  className="min-h-[400px] bg-black/30 border-white/10 focus:border-electric-blue resize-none font-mono text-sm leading-relaxed"
+                  className="min-h-[300px] md:min-h-[400px] resize-none font-mono text-sm leading-relaxed"
                 />
               </TabsContent>
-              
+
               <TabsContent value="framework" className="mt-4">
                 <FrameworkEditor
                   framework={post.framework}
@@ -595,7 +596,7 @@ export default function Editor() {
         {/* Mobile Preview Toggle Button */}
         <Button
           onClick={() => setMobilePreviewOpen(!mobilePreviewOpen)}
-          className="lg:hidden fixed bottom-6 right-6 z-50 rounded-full w-14 h-14 bg-electric-blue shadow-lg shadow-electric-blue/30"
+          className="lg:hidden fixed bottom-6 right-6 z-50 rounded-full w-14 h-14 shadow-lg"
           aria-label={mobilePreviewOpen ? 'Hide preview' : 'Show preview'}
         >
           {mobilePreviewOpen ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
@@ -603,9 +604,9 @@ export default function Editor() {
 
         {/* Preview Pane - visible on desktop, or on mobile when toggled */}
         <div className={cn(
-          "lg:col-span-4 bg-neutral-900/50 p-6 overflow-y-auto",
+          "lg:col-span-4 bg-muted/50 p-4 md:p-6 overflow-y-auto",
           mobilePreviewOpen
-            ? "fixed inset-0 z-40 lg:relative lg:inset-auto pt-20 lg:pt-6"
+            ? "fixed inset-0 z-40 lg:relative lg:inset-auto pt-20 lg:pt-6 bg-background"
             : "hidden lg:block"
         )}>
           <div className="sticky top-0">
@@ -617,13 +618,13 @@ export default function Editor() {
                     variant="ghost"
                     size="icon"
                     onClick={() => setMobilePreviewOpen(false)}
-                    className="lg:hidden text-neutral-400 hover:text-white"
+                    className="lg:hidden"
                     aria-label="Close preview"
                   >
                     <ArrowLeft className="w-5 h-5" />
                   </Button>
                 )}
-                <h3 className="font-heading text-sm font-semibold uppercase tracking-wider text-neutral-400">Preview</h3>
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Preview</h3>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -631,7 +632,6 @@ export default function Editor() {
                   size="icon"
                   onClick={() => setPreviewMode('mobile')}
                   data-testid="preview-mobile-btn"
-                  className={previewMode === 'mobile' ? 'bg-electric-blue' : 'text-neutral-400'}
                   aria-label="Mobile preview"
                   aria-pressed={previewMode === 'mobile'}
                 >
@@ -642,7 +642,6 @@ export default function Editor() {
                   size="icon"
                   onClick={() => setPreviewMode('desktop')}
                   data-testid="preview-desktop-btn"
-                  className={previewMode === 'desktop' ? 'bg-electric-blue' : 'text-neutral-400'}
                   aria-label="Desktop preview"
                   aria-pressed={previewMode === 'desktop'}
                 >
@@ -662,14 +661,17 @@ export default function Editor() {
             {/* Word Count */}
             <div className="mt-6 p-4 card-surface">
               <div className="flex justify-between text-sm">
-                <span className="text-neutral-500">Word Count</span>
-                <span className="text-white font-mono">
+                <span className="text-muted-foreground">Word Count</span>
+                <span className="text-foreground font-mono">
                   {post.content ? post.content.split(/\s+/).filter(Boolean).length : 0}
                 </span>
               </div>
               <div className="flex justify-between text-sm mt-2">
-                <span className="text-neutral-500">Hook Words</span>
-                <span className={`font-mono ${post.hook && post.hook.split(/\s+/).length > 8 ? 'text-amber-400' : 'text-white'}`}>
+                <span className="text-muted-foreground">Hook Words</span>
+                <span className={cn(
+                  "font-mono",
+                  post.hook && post.hook.split(/\s+/).length > 8 ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'
+                )}>
                   {post.hook ? post.hook.split(/\s+/).filter(Boolean).length : 0} / 8
                 </span>
               </div>

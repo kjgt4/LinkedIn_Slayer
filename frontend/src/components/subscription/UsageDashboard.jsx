@@ -9,7 +9,7 @@ export function UsageDashboard({ compact = false }) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <Loader2 className="w-6 h-6 animate-spin text-electric-blue" />
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
   }
@@ -36,18 +36,18 @@ export function UsageDashboard({ compact = false }) {
     <div className="space-y-4" data-testid="usage-dashboard">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-heading text-sm font-semibold uppercase tracking-wider text-neutral-400">
+          <h3 className="font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Usage This Month
           </h3>
-          <p className="text-xs text-neutral-500 mt-0.5">
+          <p className="text-xs text-muted-foreground/70 mt-0.5">
             Resets in {usage.period_resets_in_days} days
           </p>
         </div>
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={refreshUsage}
-          className="text-neutral-400 hover:text-white"
+          className="text-muted-foreground hover:text-foreground"
         >
           <RefreshCw className="w-4 h-4" />
         </Button>
@@ -66,7 +66,7 @@ export function UsageDashboard({ compact = false }) {
       </div>
 
       {compact && visibleItems.length < usageItems.filter(item => item.limit !== 0).length && (
-        <p className="text-xs text-neutral-500 text-center">
+        <p className="text-xs text-muted-foreground text-center">
           View all usage in Settings
         </p>
       )}

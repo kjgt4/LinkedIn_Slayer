@@ -95,19 +95,19 @@ export default function EngagementQueue() {
   const draftReadyPosts = queue.filter(p => p.status === 'draft_ready');
 
   return (
-    <div className="p-8 space-y-8" data-testid="engagement-queue">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8" data-testid="engagement-queue">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-heading text-4xl font-black uppercase tracking-tight text-white flex items-center gap-3">
-            <MessageCircle className="w-8 h-8 text-green-400" />
+          <h1 className="font-heading text-3xl md:text-4xl font-black uppercase tracking-tight text-foreground flex items-center gap-3">
+            <MessageCircle className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
             Engagement Queue
           </h1>
-          <p className="text-slate-400 mt-1">Review and engage with influencer posts</p>
+          <p className="text-muted-foreground mt-1">Review and engage with influencer posts</p>
         </div>
         <Button
           onClick={() => setShowAddDialog(true)}
-          className="bg-electric-blue hover:bg-electric-blue/80"
+          className="btn-primary"
           data-testid="add-post-btn"
         >
           Add Post to Track
@@ -115,30 +115,30 @@ export default function EngagementQueue() {
       </div>
 
       {/* Stats Bar */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-          <div className="text-2xl font-bold text-blue-400">{newPosts.length}</div>
-          <div className="text-sm text-slate-400">New Posts</div>
+          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{newPosts.length}</div>
+          <div className="text-sm text-muted-foreground">New Posts</div>
         </div>
         <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
-          <div className="text-2xl font-bold text-purple-400">{draftReadyPosts.length}</div>
-          <div className="text-sm text-slate-400">Drafts Ready</div>
+          <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{draftReadyPosts.length}</div>
+          <div className="text-sm text-muted-foreground">Drafts Ready</div>
         </div>
-        <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-          <div className="text-2xl font-bold text-green-400">{engagedPosts.length}</div>
-          <div className="text-sm text-slate-400">Recently Engaged</div>
+        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4">
+          <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{engagedPosts.length}</div>
+          <div className="text-sm text-muted-foreground">Recently Engaged</div>
         </div>
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-slate-400">Loading queue...</div>
+        <div className="text-center py-12 text-muted-foreground">Loading queue...</div>
       ) : queue.length === 0 ? (
         <EmptyState
           icon={MessageCircle}
           title="No posts in queue"
           description="Add posts from influencers to start engaging and build relationships"
           action={
-            <Button onClick={() => setShowAddDialog(true)} className="bg-electric-blue">
+            <Button onClick={() => setShowAddDialog(true)} className="btn-primary">
               Add Post to Track
             </Button>
           }
@@ -148,8 +148,8 @@ export default function EngagementQueue() {
           {/* New Posts */}
           {newPosts.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Badge className="bg-blue-500/20 text-blue-400">New</Badge>
+              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                <Badge className="bg-blue-500/20 text-blue-600 dark:text-blue-400">New</Badge>
                 Posts Awaiting Engagement
               </h2>
               <div className="space-y-3">
@@ -170,8 +170,8 @@ export default function EngagementQueue() {
           {/* Drafts Ready */}
           {draftReadyPosts.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Badge className="bg-purple-500/20 text-purple-400">Draft Ready</Badge>
+              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                <Badge className="bg-purple-500/20 text-purple-600 dark:text-purple-400">Draft Ready</Badge>
                 Ready to Engage
               </h2>
               <div className="space-y-3">
@@ -192,21 +192,21 @@ export default function EngagementQueue() {
           {/* Recently Engaged */}
           {engagedPosts.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Badge className="bg-green-500/20 text-green-400">Engaged</Badge>
+              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">Engaged</Badge>
                 Recently Completed
               </h2>
               <div className="space-y-3 opacity-75">
                 {engagedPosts.slice(0, 5).map((post) => (
                   <div
                     key={post.id}
-                    className="bg-charcoal/50 border border-white/5 rounded-lg p-4 flex items-center justify-between"
+                    className="card-surface p-4 flex items-center justify-between"
                   >
                     <div>
-                      <span className="text-white font-medium">{post.influencer_name || 'Unknown'}</span>
-                      <p className="text-sm text-slate-500 line-clamp-1">{post.post_content?.substring(0, 80)}...</p>
+                      <span className="text-foreground font-medium">{post.influencer_name || 'Unknown'}</span>
+                      <p className="text-sm text-muted-foreground line-clamp-1">{post.post_content?.substring(0, 80)}...</p>
                     </div>
-                    <Badge className="bg-green-500/20 text-green-400">{post.engagement_type}</Badge>
+                    <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">{post.engagement_type}</Badge>
                   </div>
                 ))}
               </div>
@@ -246,36 +246,36 @@ function PostCard({ post, onDraft, onMarkEngaged, onSkip, formatTimeAgo }) {
   return (
     <div
       className={cn(
-        'bg-charcoal border border-white/10 rounded-lg p-5 border-l-4',
+        'card-surface p-5 border-l-4',
         priorityColors[post.priority || 'medium']
       )}
       data-testid={`post-card-${post.id}`}
     >
-      <div className="flex items-start justify-between mb-3">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-sm font-bold text-white">
+          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold text-foreground">
             {(post.influencer_name || 'U').charAt(0).toUpperCase()}
           </div>
           <div>
-            <h3 className="font-semibold text-white">{post.influencer_name || 'Unknown Influencer'}</h3>
-            <p className="text-xs text-slate-500">{post.influencer_headline || ''}</p>
+            <h3 className="font-semibold text-foreground">{post.influencer_name || 'Unknown Influencer'}</h3>
+            <p className="text-xs text-muted-foreground">{post.influencer_headline || ''}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Badge className={statusBadgeColors[post.status]}>{post.status.replace('_', ' ')}</Badge>
-          <span className="text-xs text-slate-500 flex items-center gap-1">
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
             <Clock className="w-3 h-3" />
             {formatTimeAgo(post.discovered_at)}
           </span>
         </div>
       </div>
 
-      <p className="text-slate-300 text-sm mb-4 line-clamp-3">{post.post_content}</p>
+      <p className="text-muted-foreground text-sm mb-4 line-clamp-3">{post.post_content}</p>
 
       {post.drafted_comment && (
         <div className="bg-purple-500/10 border border-purple-500/30 rounded p-3 mb-4">
-          <p className="text-xs text-purple-400 mb-1">Drafted Comment:</p>
-          <p className="text-sm text-slate-300">{post.drafted_comment}</p>
+          <p className="text-xs text-purple-600 dark:text-purple-400 mb-1">Drafted Comment:</p>
+          <p className="text-sm text-muted-foreground">{post.drafted_comment}</p>
         </div>
       )}
 
@@ -283,22 +283,22 @@ function PostCard({ post, onDraft, onMarkEngaged, onSkip, formatTimeAgo }) {
         <Button
           size="sm"
           onClick={onDraft}
-          className="bg-purple-600 hover:bg-purple-700"
+          className="bg-purple-600 hover:bg-purple-700 text-white"
           data-testid={`draft-comment-btn-${post.id}`}
         >
           <Sparkles className="w-3 h-3 mr-1" />
           {post.drafted_comment ? 'Edit Draft' : 'Draft Comment'}
         </Button>
-        
+
         {showEngageOptions ? (
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => onMarkEngaged('like')} className="border-green-500/50 text-green-400">
+          <div className="flex gap-2 flex-wrap">
+            <Button size="sm" variant="outline" onClick={() => onMarkEngaged('like')} className="border-emerald-500/50 text-emerald-600 dark:text-emerald-400">
               Like Only
             </Button>
-            <Button size="sm" variant="outline" onClick={() => onMarkEngaged('comment')} className="border-green-500/50 text-green-400">
+            <Button size="sm" variant="outline" onClick={() => onMarkEngaged('comment')} className="border-emerald-500/50 text-emerald-600 dark:text-emerald-400">
               Commented
             </Button>
-            <Button size="sm" variant="outline" onClick={() => onMarkEngaged('both')} className="border-green-500/50 text-green-400">
+            <Button size="sm" variant="outline" onClick={() => onMarkEngaged('both')} className="border-emerald-500/50 text-emerald-600 dark:text-emerald-400">
               Both
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setShowEngageOptions(false)}>
@@ -310,13 +310,13 @@ function PostCard({ post, onDraft, onMarkEngaged, onSkip, formatTimeAgo }) {
             size="sm"
             variant="outline"
             onClick={() => setShowEngageOptions(true)}
-            className="border-green-500/50 text-green-400 hover:bg-green-500/10"
+            className="border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
           >
             <Check className="w-3 h-3 mr-1" />
             Mark Engaged
           </Button>
         )}
-        
+
         <Button
           size="sm"
           variant="ghost"
@@ -325,11 +325,11 @@ function PostCard({ post, onDraft, onMarkEngaged, onSkip, formatTimeAgo }) {
           <ExternalLink className="w-4 h-4 mr-1" />
           Open
         </Button>
-        
+
         <Button
           size="sm"
           variant="ghost"
-          className="text-slate-500 hover:text-slate-300"
+          className="text-muted-foreground hover:text-foreground"
           onClick={onSkip}
         >
           Skip
@@ -424,30 +424,30 @@ function CommentDraftingDialog({ open, onOpenChange, post, onSuccess }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-4xl bg-charcoal border-white/10 max-h-[85vh] overflow-hidden">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle>Draft Engagement Comment</DialogTitle>
           <DialogDescription>AI-generated comment variations for {post?.influencer_name}</DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-5 gap-4 h-[60vh]">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 h-[60vh]">
           {/* Left Panel - Post Content */}
-          <div className="col-span-2 bg-obsidian/50 rounded-lg p-4 overflow-y-auto">
-            <h4 className="text-sm font-medium text-slate-400 mb-2">Original Post</h4>
-            <p className="text-sm text-slate-300 whitespace-pre-wrap">{post?.post_content}</p>
+          <div className="md:col-span-2 bg-muted rounded-lg p-4 overflow-y-auto">
+            <h4 className="text-sm font-medium text-muted-foreground mb-2">Original Post</h4>
+            <p className="text-sm text-foreground whitespace-pre-wrap">{post?.post_content}</p>
           </div>
 
           {/* Right Panel - Comment Drafting */}
-          <div className="col-span-3 flex flex-col">
+          <div className="md:col-span-3 flex flex-col">
             {/* Goal Selector */}
-            <div className="flex gap-2 mb-4">
+            <div className="flex flex-wrap gap-2 mb-4">
               {['visibility', 'relationship', 'thought_leadership'].map((goal) => (
                 <Button
                   key={goal}
                   size="sm"
                   variant={engagementGoal === goal ? 'default' : 'outline'}
                   onClick={() => setEngagementGoal(goal)}
-                  className={engagementGoal === goal ? 'bg-electric-blue' : ''}
+                  className={engagementGoal === goal ? 'btn-primary' : ''}
                 >
                   {goal.replace('_', ' ')}
                 </Button>
@@ -455,14 +455,14 @@ function CommentDraftingDialog({ open, onOpenChange, post, onSuccess }) {
             </div>
 
             {loading ? (
-              <div className="flex-1 flex items-center justify-center text-slate-400">
+              <div className="flex-1 flex items-center justify-center text-muted-foreground">
                 <RefreshCw className="w-5 h-5 animate-spin mr-2" />
                 Generating comments...
               </div>
             ) : (
               <>
                 <Tabs value={selectedTab} onValueChange={setSelectedTab} className="flex-1 flex flex-col">
-                  <TabsList className="bg-obsidian">
+                  <TabsList className="bg-muted">
                     <TabsTrigger value="experience">Experience</TabsTrigger>
                     <TabsTrigger value="insight">Insight</TabsTrigger>
                     <TabsTrigger value="question">Question</TabsTrigger>
@@ -470,20 +470,20 @@ function CommentDraftingDialog({ open, onOpenChange, post, onSuccess }) {
 
                   {['experience', 'insight', 'question'].map((tab) => {
                     const variation = getVariationByApproach(tab);
-                    const approachKey = tab === 'experience' ? 'related_experience' 
+                    const approachKey = tab === 'experience' ? 'related_experience'
                       : tab === 'insight' ? 'complementary_insight' : 'thoughtful_question';
-                    
+
                     return (
                       <TabsContent key={tab} value={tab} className="flex-1 flex flex-col mt-4">
-                        <p className="text-xs text-slate-500 mb-2">{approachDescriptions[tab]}</p>
+                        <p className="text-xs text-muted-foreground mb-2">{approachDescriptions[tab]}</p>
                         <Textarea
                           value={editedComments[approachKey] || variation?.comment || ''}
                           onChange={(e) => setEditedComments({ ...editedComments, [approachKey]: e.target.value })}
-                          className="flex-1 bg-obsidian border-white/10 resize-none min-h-[200px]"
+                          className="flex-1 resize-none min-h-[200px]"
                           placeholder="Comment will appear here..."
                         />
                         <div className="flex items-center justify-between mt-2">
-                          <span className="text-xs text-slate-500">
+                          <span className="text-xs text-muted-foreground">
                             {(editedComments[approachKey] || variation?.comment || '').split(' ').filter(Boolean).length} words
                           </span>
                           <Button size="sm" variant="ghost" onClick={generateComments}>
@@ -497,8 +497,8 @@ function CommentDraftingDialog({ open, onOpenChange, post, onSuccess }) {
                 </Tabs>
 
                 {/* Actions */}
-                <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
-                  <label className="flex items-center gap-2 text-sm text-slate-400">
+                <div className="mt-4 pt-4 border-t border-border space-y-3">
+                  <label className="flex items-center gap-2 text-sm text-muted-foreground">
                     <input
                       type="checkbox"
                       checked={openOnLinkedIn}
@@ -507,12 +507,12 @@ function CommentDraftingDialog({ open, onOpenChange, post, onSuccess }) {
                     />
                     Open post on LinkedIn after copying
                   </label>
-                  
+
                   <div className="flex gap-3">
                     <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
                       Cancel
                     </Button>
-                    <Button onClick={handleUseComment} className="flex-1 bg-green-600 hover:bg-green-700">
+                    <Button onClick={handleUseComment} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white">
                       <Copy className="w-4 h-4 mr-2" />
                       Use This Comment
                     </Button>

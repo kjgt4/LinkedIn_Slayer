@@ -49,26 +49,26 @@ export default function HookValidator({ hook, onSuggestionSelect }) {
       {validation && (
         <div className={cn(
           "p-4 rounded-lg border",
-          validation.is_valid 
-            ? "bg-emerald-500/10 border-emerald-500/30" 
+          validation.is_valid
+            ? "bg-emerald-500/10 border-emerald-500/30"
             : "bg-amber-500/10 border-amber-500/30"
         )}>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
             {validation.is_valid ? (
-              <CheckCircle className="w-5 h-5 text-emerald-400" />
+              <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             ) : (
-              <AlertCircle className="w-5 h-5 text-amber-400" />
+              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             )}
-            <span className="font-medium text-white">
+            <span className="font-medium text-foreground">
               {validation.word_count} words
               {validation.is_valid ? ' - Perfect!' : ' - Consider shortening'}
             </span>
             <div className="ml-auto flex items-center gap-2">
-              <span className="text-sm text-neutral-400">Score:</span>
+              <span className="text-sm text-muted-foreground">Score:</span>
               <span className={cn(
                 "font-mono font-bold",
-                validation.score >= 80 ? "text-emerald-400" : 
-                validation.score >= 50 ? "text-amber-400" : "text-red-400"
+                validation.score >= 80 ? "text-emerald-600 dark:text-emerald-400" :
+                validation.score >= 50 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
               )}>
                 {validation.score}
               </span>
@@ -78,8 +78,8 @@ export default function HookValidator({ hook, onSuggestionSelect }) {
           {validation.suggestions.length > 0 && (
             <ul className="mt-3 space-y-1">
               {validation.suggestions.map((suggestion, i) => (
-                <li key={i} className="text-sm text-neutral-300 flex items-start gap-2">
-                  <span className="text-amber-400">•</span>
+                <li key={i} className="text-sm text-foreground/80 flex items-start gap-2">
+                  <span className="text-amber-600 dark:text-amber-400">•</span>
                   {suggestion}
                 </li>
               ))}
@@ -96,7 +96,6 @@ export default function HookValidator({ hook, onSuggestionSelect }) {
           onClick={handleGetImprovements}
           disabled={improvementLoading}
           data-testid="get-hook-improvements-btn"
-          className="border-white/10 hover:bg-white/5"
         >
           {improvementLoading ? (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -110,8 +109,8 @@ export default function HookValidator({ hook, onSuggestionSelect }) {
       {/* AI Improvements */}
       {improvements && (
         <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-500/30">
-          <p className="text-sm text-purple-300 mb-3 font-medium">AI Hook Improvements:</p>
-          <div className="whitespace-pre-wrap text-sm text-neutral-300">
+          <p className="text-sm text-purple-600 dark:text-purple-300 mb-3 font-medium">AI Hook Improvements:</p>
+          <div className="whitespace-pre-wrap text-sm text-foreground/80">
             {improvements}
           </div>
         </div>

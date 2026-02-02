@@ -45,16 +45,16 @@ export function UpgradePrompt({
   if (variant === 'inline') {
     return (
       <div className={cn(
-        "flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-electric-blue/10 to-purple-500/10 border border-electric-blue/20",
+        "flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-primary/10 to-purple-500/10 border border-primary/20",
         className
       )}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-electric-blue/20 flex items-center justify-center">
-            <Lock className="w-5 h-5 text-electric-blue" />
+          <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+            <Lock className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <p className="text-white font-medium">{featureLabel}</p>
-            <p className="text-sm text-neutral-400">
+            <p className="text-foreground font-medium">{featureLabel}</p>
+            <p className="text-sm text-muted-foreground">
               Upgrade to {requiredTier} to unlock
             </p>
           </div>
@@ -76,32 +76,32 @@ export function UpgradePrompt({
         </div>
       )}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="bg-charcoal border-white/10 sm:max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-white flex items-center gap-2">
-              <Lock className="w-5 h-5 text-electric-blue" />
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-primary" />
               Upgrade Required
             </DialogTitle>
-            <DialogDescription className="text-neutral-400">
-              <span className="font-medium text-white">{featureLabel}</span> is available on the{' '}
-              <span className="text-electric-blue capitalize">{requiredTier}</span> plan and above.
+            <DialogDescription>
+              <span className="font-medium text-foreground">{featureLabel}</span> is available on the{' '}
+              <span className="text-primary capitalize">{requiredTier}</span> plan and above.
             </DialogDescription>
           </DialogHeader>
-          <div className="mt-4 p-4 rounded-lg bg-neutral-900/50 border border-white/5">
-            <p className="text-sm text-neutral-300">
+          <div className="mt-4 p-4 rounded-lg bg-muted/50 border border-border">
+            <p className="text-sm text-foreground/80">
               Unlock premium features to supercharge your LinkedIn content strategy:
             </p>
-            <ul className="mt-3 space-y-2 text-sm text-neutral-400">
+            <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
               <li className="flex items-center gap-2">
-                <ArrowRight className="w-3 h-3 text-electric-blue" />
+                <ArrowRight className="w-3 h-3 text-primary" />
                 More posts and AI generations
               </li>
               <li className="flex items-center gap-2">
-                <ArrowRight className="w-3 h-3 text-electric-blue" />
+                <ArrowRight className="w-3 h-3 text-primary" />
                 LinkedIn integration
               </li>
               <li className="flex items-center gap-2">
-                <ArrowRight className="w-3 h-3 text-electric-blue" />
+                <ArrowRight className="w-3 h-3 text-primary" />
                 Advanced analytics
               </li>
             </ul>

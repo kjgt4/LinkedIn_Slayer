@@ -115,8 +115,8 @@ export default function TopicSuggestions({ onSelect }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-electric-blue" />
-          <h3 className="font-heading text-lg font-semibold uppercase tracking-wide">Topic Ideas</h3>
+          <Sparkles className="w-5 h-5 text-primary" />
+          <h3 className="font-heading text-lg font-semibold uppercase tracking-wide text-foreground">Topic Ideas</h3>
         </div>
         <Button
           variant="ghost"
@@ -124,7 +124,7 @@ export default function TopicSuggestions({ onSelect }) {
           onClick={handleRefresh}
           disabled={loading}
           data-testid="refresh-topics-btn"
-          className="text-neutral-400 hover:text-white"
+          className="text-muted-foreground hover:text-foreground"
         >
           {loading ? (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -137,7 +137,7 @@ export default function TopicSuggestions({ onSelect }) {
 
       {/* Inspiration URL Input with History Dropdown */}
       <div className="space-y-2">
-        <label className="text-xs text-neutral-500 uppercase tracking-wider flex items-center gap-1">
+        <label className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1">
           <Link className="w-3 h-3" />
           Inspiration
         </label>
@@ -149,35 +149,34 @@ export default function TopicSuggestions({ onSelect }) {
               onKeyDown={handleUrlKeyDown}
               placeholder="Paste URL for content inspiration..."
               data-testid="inspiration-url-input"
-              className="bg-black/30 border-white/10 focus:border-electric-blue text-sm pr-10"
+              className="text-sm pr-10"
             />
             {inspirationUrl && (
               <button
                 onClick={() => setInspirationUrl('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 <X className="w-4 h-4" />
               </button>
             )}
           </div>
-          
+
           {/* History Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 data-testid="url-history-btn"
-                className="text-neutral-400 hover:text-white border border-white/10"
               >
                 <History className="w-4 h-4" />
                 <ChevronDown className="w-3 h-3 ml-1" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 bg-charcoal border-white/10">
+            <DropdownMenuContent align="end" className="w-80">
               {favoriteUrls.length > 0 && (
                 <>
-                  <DropdownMenuLabel className="text-xs text-amber-400 flex items-center gap-1">
+                  <DropdownMenuLabel className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
                     <Star className="w-3 h-3 fill-current" />
                     Favorites
                   </DropdownMenuLabel>
@@ -192,9 +191,9 @@ export default function TopicSuggestions({ onSelect }) {
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={(e) => handleToggleFavorite(e, urlItem)}
-                            className="p-1 hover:bg-white/10 rounded"
+                            className="p-1 hover:bg-muted rounded"
                           >
-                            <Star className="w-3 h-3 text-amber-400 fill-current" />
+                            <Star className="w-3 h-3 text-amber-600 dark:text-amber-400 fill-current" />
                           </button>
                           <button
                             onClick={(e) => {
@@ -202,31 +201,31 @@ export default function TopicSuggestions({ onSelect }) {
                               handleSaveToVault(urlItem);
                             }}
                             disabled={savingToVault === urlItem.id}
-                            className="p-1 hover:bg-white/10 rounded"
+                            className="p-1 hover:bg-muted rounded"
                           >
                             {savingToVault === urlItem.id ? (
-                              <Loader2 className="w-3 h-3 animate-spin text-electric-blue" />
+                              <Loader2 className="w-3 h-3 animate-spin text-primary" />
                             ) : (
-                              <Database className="w-3 h-3 text-electric-blue" />
+                              <Database className="w-3 h-3 text-primary" />
                             )}
                           </button>
                           <button
                             onClick={(e) => handleDeleteUrl(e, urlItem)}
-                            className="p-1 hover:bg-white/10 rounded"
+                            className="p-1 hover:bg-muted rounded"
                           >
-                            <X className="w-3 h-3 text-red-400" />
+                            <X className="w-3 h-3 text-destructive" />
                           </button>
                         </div>
                       </div>
                     </DropdownMenuItem>
                   ))}
-                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuSeparator />
                 </>
               )}
-              
+
               {recentUrls.length > 0 && (
                 <>
-                  <DropdownMenuLabel className="text-xs text-neutral-500">
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">
                     Recent
                   </DropdownMenuLabel>
                   {recentUrls.map((urlItem) => (
@@ -240,9 +239,9 @@ export default function TopicSuggestions({ onSelect }) {
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={(e) => handleToggleFavorite(e, urlItem)}
-                            className="p-1 hover:bg-white/10 rounded"
+                            className="p-1 hover:bg-muted rounded"
                           >
-                            <Star className="w-3 h-3 text-neutral-500 hover:text-amber-400" />
+                            <Star className="w-3 h-3 text-muted-foreground hover:text-amber-500" />
                           </button>
                           <button
                             onClick={(e) => {
@@ -250,19 +249,19 @@ export default function TopicSuggestions({ onSelect }) {
                               handleSaveToVault(urlItem);
                             }}
                             disabled={savingToVault === urlItem.id}
-                            className="p-1 hover:bg-white/10 rounded"
+                            className="p-1 hover:bg-muted rounded"
                           >
                             {savingToVault === urlItem.id ? (
-                              <Loader2 className="w-3 h-3 animate-spin text-electric-blue" />
+                              <Loader2 className="w-3 h-3 animate-spin text-primary" />
                             ) : (
-                              <Database className="w-3 h-3 text-neutral-500 hover:text-electric-blue" />
+                              <Database className="w-3 h-3 text-muted-foreground hover:text-primary" />
                             )}
                           </button>
                           <button
                             onClick={(e) => handleDeleteUrl(e, urlItem)}
-                            className="p-1 hover:bg-white/10 rounded"
+                            className="p-1 hover:bg-muted rounded"
                           >
-                            <X className="w-3 h-3 text-neutral-500 hover:text-red-400" />
+                            <X className="w-3 h-3 text-muted-foreground hover:text-destructive" />
                           </button>
                         </div>
                       </div>
@@ -270,9 +269,9 @@ export default function TopicSuggestions({ onSelect }) {
                   ))}
                 </>
               )}
-              
+
               {urlHistory.length === 0 && (
-                <div className="px-2 py-4 text-center text-sm text-neutral-500">
+                <div className="px-2 py-4 text-center text-sm text-muted-foreground">
                   No URL history yet
                 </div>
               )}
@@ -287,7 +286,7 @@ export default function TopicSuggestions({ onSelect }) {
               onClick={handleRefresh}
               disabled={loading}
               data-testid="generate-inspired-topics-btn"
-              className="text-electric-blue hover:bg-electric-blue/10 shrink-0"
+              className="text-primary hover:bg-primary/10 shrink-0"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -297,7 +296,7 @@ export default function TopicSuggestions({ onSelect }) {
             </Button>
           )}
         </div>
-        <p className="text-xs text-neutral-600">
+        <p className="text-xs text-muted-foreground/70">
           Add a URL to steer AI suggestions • Click <History className="w-3 h-3 inline" /> for history
         </p>
       </div>
@@ -308,15 +307,15 @@ export default function TopicSuggestions({ onSelect }) {
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="p-4 card-surface">
-                <Skeleton className="h-5 w-full mb-2 bg-white/10" />
-                <Skeleton className="h-4 w-2/3 mb-3 bg-white/5" />
+                <Skeleton className="h-5 w-full mb-2 bg-muted" />
+                <Skeleton className="h-4 w-2/3 mb-3 bg-muted/50" />
                 <div className="flex gap-2">
-                  <Skeleton className="h-5 w-16 rounded bg-white/10" />
-                  <Skeleton className="h-5 w-14 rounded bg-white/10" />
+                  <Skeleton className="h-5 w-16 rounded bg-muted" />
+                  <Skeleton className="h-5 w-14 rounded bg-muted" />
                 </div>
               </div>
             ))}
-            <p className="text-xs text-neutral-500 text-center pt-2">
+            <p className="text-xs text-muted-foreground text-center pt-2">
               {inspirationUrl ? 'Analyzing content...' : 'Generating ideas...'}
             </p>
           </div>
@@ -326,18 +325,18 @@ export default function TopicSuggestions({ onSelect }) {
               key={index}
               onClick={() => onSelect(suggestion)}
               data-testid={`topic-suggestion-${index}`}
-              className="w-full p-4 card-surface hover:border-white/20 transition-all duration-200 text-left group"
+              className="w-full p-4 card-surface hover:border-primary/30 transition-all duration-200 text-left group"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
-                  <p className="font-medium text-white group-hover:text-electric-blue transition-colors">
+                  <p className="font-medium text-foreground group-hover:text-primary transition-colors">
                     {suggestion.topic}
                   </p>
-                  <p className="text-sm text-neutral-500 mt-1">{suggestion.angle}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{suggestion.angle}</p>
                 </div>
-                <ArrowRight className="w-5 h-5 text-neutral-600 group-hover:text-electric-blue transition-colors mt-1" />
+                <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors mt-1" />
               </div>
-              <div className="flex gap-2 mt-3">
+              <div className="flex flex-wrap gap-2 mt-3">
                 <span className={cn("px-2 py-0.5 rounded text-xs", PILLARS[suggestion.pillar]?.color)}>
                   {PILLARS[suggestion.pillar]?.label}
                 </span>
