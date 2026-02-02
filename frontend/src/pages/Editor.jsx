@@ -176,9 +176,16 @@ export default function Editor() {
       const dateStr = scheduleDate ? scheduleDate.toISOString().split('T')[0] : null;
       if (dateStr) {
         await schedulePost(newPostId, dateStr, parseInt(scheduleSlot), scheduleTime);
+        setPost(prev => ({
+          ...prev,
+          id: newPostId,
+          status: 'scheduled',
+          scheduled_date: dateStr,
+          scheduled_slot: parseInt(scheduleSlot),
+          scheduled_time: scheduleTime
+        }));
         toast.success('Post scheduled!');
         setScheduleDialogOpen(false);
-        loadPost();
       }
     } else {
       const dateStr = scheduleDate ? scheduleDate.toISOString().split('T')[0] : null;
