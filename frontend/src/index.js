@@ -14,7 +14,7 @@ if (!PUBLISHABLE_KEY) {
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <ClerkProvider 
+    <ClerkProvider
       publishableKey={PUBLISHABLE_KEY || 'pk_test_placeholder'}
       afterSignOutUrl="/"
       signInUrl="/sign-in"
