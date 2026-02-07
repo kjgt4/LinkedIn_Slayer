@@ -61,7 +61,7 @@
     --shadow-offset-y: 0px;
     --letter-spacing: normal;
     --spacing: 0.25rem;
-    --tracking-normal: normal;
+    --tracking-normal: 0em;
   }
 
   /* Dark Mode */
@@ -119,19 +119,12 @@
     --shadow-xl: 0px 0px 0px 0px hsl(0 0% 10.1961% / 0.05), 0px 8px 10px -1px hsl(0 0% 10.1961% / 0.05);
     --shadow-2xl: 0px 0px 0px 0px hsl(0 0% 10.1961% / 0.13);
   }
-  .theme {
-    --font-sans: DM Sans, sans-serif;
-    --font-mono: Space Mono, monospace;
-    --font-serif: DM Sans, sans-serif;
-    --radius: 1rem;
+  :root {
     --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
     --tracking-tight: calc(var(--tracking-normal) - 0.025em);
     --tracking-wide: calc(var(--tracking-normal) + 0.025em);
     --tracking-wider: calc(var(--tracking-normal) + 0.05em);
     --tracking-widest: calc(var(--tracking-normal) + 0.1em);
-  }
-  body {
-    letter-spacing: var(--tracking-normal);
   }
 }
 
